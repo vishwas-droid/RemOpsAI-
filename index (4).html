@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RemOpsAI Incident Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#0a0d12; --bg-raised:#0d1119; --ink:#e8ecf3;
+  --rops-bg:#0b0f16; --rops-surface:#121826; --rops-surface2:#171f30; --rops-border:#232c40; --rops-border-soft:#1a2233;
+  --rops-text:#e7ecf7; --rops-dim:#8b93ab; --rops-faint:#5c657c;
+  --accent:#4c8dff; --accent-2:#22d3b7; --accent-soft:rgba(76,141,255,.14);
+  --danger:#f0475a; --danger-soft:rgba(240,71,90,.14);
+  --warn:#f5a623; --warn-soft:rgba(245,166,35,.14);
+  --ok:#22c77a; --ok-soft:rgba(34,199,122,.14);
+
+  --mer-bg:#fbf9f6; --mer-surface:#ffffff; --mer-border:#e7e2d9; --mer-ink:#1c1a17; --mer-dim:#6f6a60;
+  --mer-accent:#c65a2e; --mer-accent-ink:#ffffff; --mer-accent-soft:#fbe6da;
+
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --radius:10px; --radius-lg:16px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{min-height:100vh;display:flex;flex-direction:column}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+::selection{background:var(--accent-soft)}
+.hidden{display:none !important}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#28324a;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+/* ============ SIMULATION CONTROL STRIP ============ */
+.simbar{
+  position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
+  padding:9px 18px;background:linear-gradient(180deg,#0d1119,#0a0d12);
+  border-bottom:1px solid #1c2334;
+}
+.simbar-tag{
+  display:flex;align-items:center;gap:7px;font:700 10.5px/1 var(--mono);letter-spacing:.09em;
+  color:var(--accent-2);padding:6px 9px;border:1px solid #1c3a3a;border-radius:7px;background:rgba(34,211,183,.06);
+  white-space:nowrap;
+}
+.simbar-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 0 3px rgba(34,211,183,.18)}
+.envswitch{display:flex;gap:4px;background:#10151f;border:1px solid #1c2334;border-radius:10px;padding:3px}
+.envbtn{
+  display:flex;align-items:center;gap:7px;padding:7px 13px;border:none;background:transparent;color:var(--rops-dim);
+  border-radius:8px;font-size:12.5px;font-weight:600;letter-spacing:.01em;transition:background .15s,color .15s;
+}
+.envbtn .b{width:6px;height:6px;border-radius:50%;flex:none}
+.envbtn.active{background:#1c2536;color:var(--ink)}
+.envbtn:not(.active):hover{background:#141b28;color:#c6cce0}
+.simbar-spacer{flex:1}
+.status-pill{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;
+  border:1px solid var(--rops-border);background:var(--rops-surface);color:var(--ok);white-space:nowrap;
+}
+.status-pill .pdot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px currentColor;opacity:.9}
+.status-pill.warn{color:var(--warn)}
+.status-pill.bad{color:var(--danger);animation:pulseBad 1.4s ease-in-out infinite}
+.status-pill.recovering{color:var(--accent)}
+@keyframes pulseBad{0%,100%{box-shadow:0 0 0 0 rgba(240,71,90,0)}50%{box-shadow:0 0 0 5px rgba(240,71,90,.12)}}
+.btn{
+  border-radius:9px;padding:8px 15px;font-size:12.5px;font-weight:700;border:1px solid transparent;letter-spacing:.01em;
+  transition:filter .15s,transform .05s;white-space:nowrap;
+}
+.btn:active{transform:translateY(1px)}
+.btn-trigger{background:linear-gradient(180deg,#ff5a68,#e3324a);color:#fff;box-shadow:0 6px 18px -6px rgba(240,71,90,.55)}
+.btn-trigger:hover:not(:disabled){filter:brightness(1.08)}
+.btn-ghost{background:#12182450;border-color:var(--rops-border);color:var(--rops-dim)}
+.btn-ghost:hover{color:var(--ink);border-color:#33405c}
+.btn-auto{background:var(--rops-surface2);border-color:var(--rops-border);color:#cfe0ff;display:flex;align-items:center;gap:6px}
+.btn-auto:hover{border-color:#3a4666}
+.simbar{flex-wrap:wrap;row-gap:8px}
+
+/* ============ SIMULATED CURSOR (autoplay) ============ */
+.sim-cursor{
+  position:fixed;top:0;left:0;width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #ffffff, #cfe0ff 45%, var(--accent) 100%);
+  box-shadow:0 0 0 4px rgba(76,141,255,.16), 0 8px 18px -6px rgba(0,0,0,.55);
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
+  transition:left .6s cubic-bezier(.45,0,.2,1), top .6s cubic-bezier(.45,0,.2,1), opacity .25s ease;
+  opacity:0;
+}
+.sim-cursor.show{opacity:1}
+.sim-cursor::after{
+  content:"";position:absolute;inset:-6px;border-radius:50%;border:1.5px solid rgba(76,141,255,.4);opacity:0;
+}
+.sim-cursor.clicking::after{animation:cursorPulse .5s ease-out}
+@keyframes cursorPulse{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(2)}}
+.sim-caption{
+  position:fixed;top:0;left:0;z-index:9999;background:#0d1119;border:1px solid #2a3450;color:#e7ecf7;
+  padding:6px 13px;border-radius:20px;font:600 12px var(--sans);white-space:nowrap;pointer-events:none;
+  transform:translate(-50%,calc(-100% - 20px));opacity:0;transition:left .6s cubic-bezier(.45,0,.2,1), top .6s cubic-bezier(.45,0,.2,1), opacity .25s ease;
+  box-shadow:0 12px 26px -12px rgba(0,0,0,.6);
+}
+.sim-caption.show{opacity:1}
+@media (prefers-reduced-motion: reduce){
+  .sim-cursor, .sim-caption{transition:opacity .2s ease}
+}
+
+/* ============ VIEWPORT ============ */
+.viewport{flex:1;min-height:0;background:var(--bg)}
+.env{display:none;min-height:calc(100vh - 49px)}
+.env.active{display:block}
+
+/* ============================================================
+   MERIDIAN STOREFRONT
+   ============================================================ */
+#env-store{background:var(--mer-bg);color:var(--mer-ink)}
+.mer-shell{max-width:1180px;margin:0 auto}
+.mer-addr{
+  display:flex;align-items:center;gap:8px;padding:7px 18px;background:#f1ede4;border-bottom:1px solid var(--mer-border);
+  font:500 11.5px var(--mono);color:var(--mer-dim);
+}
+.mer-addr .lockdot{width:6px;height:6px;border-radius:50%;background:#3fa15a}
+.mer-header{
+  display:flex;align-items:center;gap:22px;padding:16px 28px;background:var(--mer-surface);
+  border-bottom:1px solid var(--mer-border);position:sticky;top:49px;z-index:20;
+}
+.mer-logo{font-weight:800;font-size:21px;letter-spacing:-.02em;color:var(--mer-ink);cursor:pointer;white-space:nowrap}
+.mer-logo span{color:var(--mer-accent)}
+.mer-search{
+  flex:1;display:flex;align-items:center;gap:10px;background:#f4f1eb;border:1px solid var(--mer-border);
+  border-radius:10px;padding:9px 14px;max-width:560px;
+}
+.mer-search input{flex:1;border:none;background:transparent;font-size:13.5px;color:var(--mer-ink);outline:none}
+.mer-search svg{flex:none;opacity:.5}
+.mer-navlinks{display:flex;gap:18px;font-size:12.5px;color:var(--mer-dim);font-weight:600}
+.mer-navlinks a{color:inherit;text-decoration:none;cursor:pointer}
+.mer-navlinks a:hover{color:var(--mer-ink)}
+.mer-spacer{flex:1}
+.mer-cart{
+  display:flex;align-items:center;gap:7px;background:var(--mer-ink);color:#fff;border:none;border-radius:9px;
+  padding:9px 14px;font-weight:700;font-size:12.5px;position:relative;
+}
+.mer-cart .cnt{
+  background:var(--mer-accent);border-radius:50%;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;padding:0 4px;
+}
+.mer-body{padding:26px 28px 60px}
+.mer-crumb{font-size:12px;color:var(--mer-dim);margin-bottom:16px;display:flex;gap:6px;align-items:center}
+.mer-crumb a{color:var(--mer-dim);cursor:pointer;text-decoration:none}
+.mer-crumb a:hover{color:var(--mer-accent)}
+.mer-hero{
+  background:linear-gradient(120deg,#2a2420,#453a2e);border-radius:18px;padding:38px 40px;color:#f4ede1;margin-bottom:26px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+.mer-hero h1{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.01em}
+.mer-hero p{margin:0;color:#cdbfa8;font-size:13.5px}
+.mer-hero .tag{display:inline-block;margin-top:14px;background:var(--mer-accent);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700}
+.mer-grid-title{font-size:13px;font-weight:700;color:var(--mer-dim);text-transform:uppercase;letter-spacing:.06em;margin:0 0 14px}
+.mer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:900px){.mer-grid{grid-template-columns:repeat(2,1fr)}}
+.mer-card{
+  background:var(--mer-surface);border:1px solid var(--mer-border);border-radius:14px;overflow:hidden;cursor:pointer;
+  transition:box-shadow .15s,transform .1s;
+}
+.mer-card:hover{box-shadow:0 14px 30px -16px rgba(0,0,0,.18);transform:translateY(-2px)}
+.mer-thumb{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:34px}
+.mer-card .info{padding:12px 13px 15px}
+.mer-card h3{margin:0 0 4px;font-size:13px;font-weight:600;line-height:1.35}
+.mer-rating{font-size:11px;color:var(--mer-dim);margin-bottom:6px}
+.mer-rating b{color:#c9a227}
+.mer-price{font-size:15px;font-weight:800}
+.mer-empty{padding:60px 0;text-align:center;color:var(--mer-dim);font-size:13.5px}
+
+.mer-pdp{display:grid;grid-template-columns:1.05fr 1fr;gap:44px}
+@media (max-width:860px){.mer-pdp{grid-template-columns:1fr}}
+.mer-gallery-main{aspect-ratio:1/1;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:90px;margin-bottom:12px}
+.mer-gallery-thumbs{display:flex;gap:9px}
+.mer-gthumb{width:62px;height:62px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid transparent;cursor:pointer}
+.mer-gthumb.sel{border-color:var(--mer-accent)}
+.mer-pdp h1{font-size:23px;margin:0 0 8px;letter-spacing:-.01em}
+.mer-pdp-price{font-size:24px;font-weight:800;margin:6px 0 16px}
+.mer-pdp-price .was{font-size:14px;color:var(--mer-dim);text-decoration:line-through;font-weight:500;margin-left:8px}
+.mer-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mer-dim);margin:18px 0 8px}
+.mer-swatches{display:flex;gap:8px;flex-wrap:wrap}
+.mer-pill{
+  padding:8px 15px;border-radius:9px;border:1.5px solid var(--mer-border);background:#fff;font-size:12.5px;font-weight:600;
+}
+.mer-pill.sel{border-color:var(--mer-ink);background:var(--mer-ink);color:#fff}
+.mer-qty{display:flex;align-items:center;gap:0;border:1.5px solid var(--mer-border);border-radius:9px;width:fit-content}
+.mer-qty button{width:34px;height:34px;background:none;border:none;font-size:16px;font-weight:700}
+.mer-qty span{width:34px;text-align:center;font-weight:700;font-size:13px}
+.mer-addcart{
+  margin-top:22px;width:100%;padding:14px;background:var(--mer-ink);color:#fff;border:none;border-radius:11px;
+  font-size:14px;font-weight:800;letter-spacing:.01em;
+}
+.mer-addcart:hover{background:#000}
+.mer-reviews{margin-top:26px;border-top:1px solid var(--mer-border);padding-top:18px}
+.mer-review{padding:12px 0;border-bottom:1px solid #f0ece3}
+.mer-review .stars{color:#c9a227;font-size:12px;margin-bottom:4px}
+.mer-review .who{font-size:11.5px;color:var(--mer-dim);margin-top:4px}
+.mer-review p{margin:4px 0 0;font-size:12.5px;line-height:1.55;color:#3a352d}
+
+.mer-toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--mer-ink);color:#fff;
+  padding:12px 20px;border-radius:11px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  z-index:500;box-shadow:0 20px 40px -16px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px;
+}
+.mer-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.mer-cartview{max-width:760px;margin:0 auto}
+.mer-cart-row{display:flex;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--mer-border)}
+.mer-cart-thumb{width:66px;height:66px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.mer-cart-row .meta{flex:1;min-width:0}
+.mer-cart-row .meta h4{margin:0 0 3px;font-size:13.5px}
+.mer-cart-row .meta .sub{font-size:11.5px;color:var(--mer-dim)}
+.mer-cart-row .price{font-weight:800;font-size:14px;white-space:nowrap}
+.mer-summary{
+  background:var(--mer-surface);border:1px solid var(--mer-border);border-radius:14px;padding:20px 22px;margin-top:22px;
+}
+.mer-summary .line{display:flex;justify-content:space-between;font-size:13px;color:var(--mer-dim);padding:5px 0}
+.mer-summary .line.total{border-top:1px solid var(--mer-border);margin-top:8px;padding-top:12px;font-size:16px;font-weight:800;color:var(--mer-ink)}
+.mer-cta{width:100%;padding:15px;border:none;border-radius:11px;background:var(--mer-accent);color:#fff;font-size:14.5px;font-weight:800;margin-top:16px}
+.mer-cta:hover:not(:disabled){filter:brightness(1.06)}
+.mer-cta.secondary{background:var(--mer-ink)}
+
+.mer-checkout{display:grid;grid-template-columns:1.2fr .9fr;gap:38px;max-width:980px;margin:0 auto}
+@media (max-width:800px){.mer-checkout{grid-template-columns:1fr}}
+.mer-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.mer-field{display:flex;flex-direction:column;gap:6px}
+.mer-field label{font-size:11px;font-weight:700;color:var(--mer-dim);text-transform:uppercase;letter-spacing:.05em}
+.mer-field input{border:1.5px solid var(--mer-border);border-radius:9px;padding:11px 12px;font-size:13px;background:#fff;color:var(--mer-ink)}
+.mer-field input:focus{outline:none;border-color:var(--mer-accent)}
+.mer-card-panel{background:var(--mer-surface);border:1px solid var(--mer-border);border-radius:14px;padding:20px 22px;margin-bottom:18px}
+.mer-card-panel h3{margin:0 0 14px;font-size:13.5px}
+.mer-payrow{display:flex;align-items:center;gap:12px;border:1.5px solid var(--mer-border);border-radius:10px;padding:12px 14px;font:600 13px var(--mono)}
+.mer-payrow .brand{background:#1a1f71;color:#fff;font:800 10px var(--sans);padding:3px 7px;border-radius:4px}
+
+.mer-alert{
+  display:flex;gap:12px;align-items:flex-start;background:#fdecee;border:1.5px solid #f6b9c1;color:#9a1730;border-radius:12px;
+  padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.5;animation:shakeIn .35s ease;
+}
+@keyframes shakeIn{0%{transform:translateX(0);opacity:0}20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}100%{transform:translateX(0);opacity:1}}
+.mer-alert b{display:block;margin-bottom:2px;font-size:13.5px}
+.mer-alert .code{font:600 11px var(--mono);color:#c4405a;margin-top:5px;display:block}
+
+.mer-confirm{max-width:560px;margin:60px auto;text-align:center}
+.mer-confirm .ring{width:76px;height:76px;border-radius:50%;background:var(--ok-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.mer-confirm h1{font-size:23px;margin:0 0 8px}
+.mer-confirm .ordno{font:700 15px var(--mono);color:var(--mer-dim);margin-bottom:26px}
+.mer-confirm-card{background:var(--mer-surface);border:1px solid var(--mer-border);border-radius:14px;padding:20px 22px;text-align:left}
+
+.spinner{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   REMOPSAI CONSOLE
+   ============================================================ */
+#env-rops{background:var(--rops-bg);color:var(--rops-text)}
+.rops-shell{display:flex;min-height:calc(100vh - 49px)}
+.rops-side{
+  width:216px;flex:none;background:var(--rops-surface);border-right:1px solid var(--rops-border-soft);
+  padding:18px 12px;display:flex;flex-direction:column;gap:2px;
+}
+.rops-brand{display:flex;align-items:center;gap:9px;padding:4px 8px 18px}
+.rops-mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent-2));flex:none;position:relative}
+.rops-mark svg{position:absolute;inset:0}
+.rops-brand b{font-size:14px;letter-spacing:-.01em}
+.rops-brand span{color:var(--accent-2)}
+.navsec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--rops-faint);text-transform:uppercase;padding:14px 10px 6px}
+.navitem{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:600;
+  color:var(--rops-dim);border:none;background:none;width:100%;text-align:left;position:relative;
+}
+.navitem svg{flex:none;opacity:.85}
+.navitem:hover{background:var(--rops-surface2);color:var(--rops-text)}
+.navitem.active{background:var(--accent-soft);color:#cfe0ff}
+.navitem .nbadge{
+  margin-left:auto;background:var(--danger);color:#fff;font:700 9.5px var(--mono);padding:1px 6px;border-radius:20px;
+}
+.navitem .nbadge.ok{background:var(--ok)}
+.navitem:disabled{opacity:.4}
+
+.rops-main{flex:1;min-width:0;padding:22px 28px 60px;overflow-x:hidden}
+.rops-topline{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.rops-topline h1{font-size:19px;margin:0;letter-spacing:-.01em}
+.sev-badge{font:800 10.5px var(--mono);letter-spacing:.04em;padding:4px 9px;border-radius:6px;background:var(--danger-soft);color:var(--danger);border:1px solid rgba(240,71,90,.35)}
+.rops-topline .meta{font-size:12px;color:var(--rops-faint);font-family:var(--mono)}
+
+.panel{background:var(--rops-surface);border:1px solid var(--rops-border-soft);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.panel-h h2{font-size:13px;margin:0;font-weight:700;letter-spacing:.01em}
+.panel-h .sub{font-size:11.5px;color:var(--rops-faint)}
+
+.banner{
+  border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;border:1px solid;
+}
+.banner.b-idle{background:var(--ok-soft);border-color:rgba(34,199,122,.3)}
+.banner.b-bad{background:var(--danger-soft);border-color:rgba(240,71,90,.35)}
+.banner.b-warn{background:var(--warn-soft);border-color:rgba(245,166,35,.35)}
+.banner.b-info{background:var(--accent-soft);border-color:rgba(76,141,255,.35)}
+.banner.b-ok{background:var(--ok-soft);border-color:rgba(34,199,122,.35)}
+.banner h3{margin:0 0 3px;font-size:14.5px}
+.banner p{margin:0;font-size:12.5px;color:var(--rops-dim);line-height:1.5}
+.banner .bicon{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+@media (max-width:1100px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:13px 14px}
+.kpi .lbl{font-size:10.5px;color:var(--rops-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:7px}
+.kpi .val{font:700 19px/1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi .val.bad{color:var(--danger)}
+.kpi .val.ok{color:var(--ok)}
+.kpi .val.warn{color:var(--warn)}
+.kpi svg.spark{margin-top:8px;width:100%;height:24px;display:block}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+
+/* service map */
+.svcmap{width:100%;height:auto;display:block}
+.svcnode-label{font:700 11px var(--sans);fill:var(--rops-text)}
+.svcnode-sub{font:600 9px var(--mono);letter-spacing:.02em}
+
+/* logs */
+.logbox{
+  background:#080b10;border:1px solid var(--rops-border-soft);border-radius:10px;padding:11px 4px 11px 0;
+  max-height:420px;overflow-y:auto;font:500 11.5px/1.65 var(--mono);
+}
+.logline{padding:1px 14px;display:flex;gap:10px;white-space:pre-wrap;word-break:break-word}
+.logline .ts{color:var(--rops-faint);flex:none}
+.logline .lvl{flex:none;font-weight:800;width:42px}
+.logline.INFO .lvl{color:#6c9dfa}
+.logline.WARN .lvl{color:var(--warn)}
+.logline.ERROR .lvl{color:var(--danger)}
+.logline .svc{color:var(--accent-2);flex:none}
+.logline .msg{color:#c7cee0}
+
+/* metrics charts */
+.chartcard{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:14px 16px}
+.chartcard .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.chartcard .top .t{font-size:11.5px;font-weight:700;color:var(--rops-dim)}
+.chartcard .top .v{font:700 18px var(--mono)}
+.chartcard svg{width:100%;height:64px;display:block}
+.gaugewrap{display:flex;align-items:center;gap:16px}
+.gaugewrap .num{font:700 22px var(--mono)}
+.gaugewrap .cap{font-size:11px;color:var(--rops-faint)}
+
+/* traces */
+.trace-row{display:grid;grid-template-columns:150px 1fr 70px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rops-border-soft)}
+.trace-row:last-child{border:none}
+.trace-svc{font:600 11.5px var(--mono);color:var(--rops-dim)}
+.trace-bar-track{height:16px;background:#161d2c;border-radius:5px;position:relative;overflow:hidden}
+.trace-bar{height:100%;border-radius:5px;background:var(--accent);transition:width .5s ease, background .3s ease}
+.trace-bar.slow{background:var(--danger)}
+.trace-dur{font:700 11px var(--mono);text-align:right}
+.trace-dur.slow{color:var(--danger)}
+
+/* k8s */
+table.k8s{width:100%;border-collapse:collapse;font-size:12px}
+table.k8s th{text-align:left;font:700 10.5px var(--mono);color:var(--rops-faint);text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;border-bottom:1px solid var(--rops-border-soft)}
+table.k8s td{padding:8px 10px;border-bottom:1px solid var(--rops-border-soft);font-family:var(--mono);color:var(--rops-dim)}
+.pod-status{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.pod-status .d{width:7px;height:7px;border-radius:50%}
+.pod-status.run{color:var(--ok)}
+.pod-status.run .d{background:var(--ok)}
+.pod-status.crash{color:var(--danger)}
+.pod-status.crash .d{background:var(--danger);animation:blinkd 1s infinite}
+.pod-status.restart{color:var(--warn)}
+.pod-status.restart .d{background:var(--warn)}
+@keyframes blinkd{50%{opacity:.25}}
+
+/* db */
+.pool-bar-track{height:22px;background:#161d2c;border-radius:8px;overflow:hidden;border:1px solid var(--rops-border-soft)}
+.pool-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .6s ease, background .4s ease}
+.pool-bar.crit{background:linear-gradient(90deg,#ff8a5a,var(--danger))}
+
+/* deployments / github */
+.dep-row{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--rops-border-soft)}
+.dep-row:last-child{border:none}
+.dep-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--rops-border)}
+.dep-row.flagged .dep-dot{background:var(--danger)}
+.dep-row .body{flex:1;min-width:0}
+.dep-row .ver{font:700 12.5px var(--mono)}
+.dep-row .flag{font:700 9.5px var(--mono);background:var(--danger-soft);color:var(--danger);padding:2px 7px;border-radius:5px;margin-left:8px}
+.dep-row .sub{font-size:11.5px;color:var(--rops-faint);margin-top:2px}
+.rollback-btn{margin-top:8px;font:700 11px var(--sans);background:var(--rops-surface2);border:1px solid var(--rops-border);color:var(--rops-dim);padding:5px 10px;border-radius:7px}
+
+.gh-card{border:1px solid var(--rops-border-soft);border-radius:10px;padding:14px 16px;background:var(--rops-surface2)}
+.gh-card .title{font:700 13px var(--sans);margin-bottom:6px}
+.gh-card .meta{font:500 11.5px var(--mono);color:var(--rops-faint);margin-bottom:10px}
+.gh-diff{font:600 11.5px var(--mono);display:flex;gap:14px}
+.gh-diff .add{color:var(--ok)}
+.gh-diff .del{color:var(--danger)}
+
+/* customer sessions */
+.sess-row{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rops-border-soft);font-size:12px}
+.sess-row .sid{font:700 11.5px var(--mono);color:var(--rops-dim);width:90px;flex:none}
+.sess-row .txt{flex:1;color:var(--rops-dim)}
+.sess-row .badge{font:700 9.5px var(--mono);padding:2px 8px;border-radius:20px;flex:none}
+.sess-row .badge.fail{background:var(--danger-soft);color:var(--danger)}
+.sess-row .badge.ok{background:var(--ok-soft);color:var(--ok)}
+.sess-row .ts{color:var(--rops-faint);font:500 11px var(--mono);flex:none}
+
+/* investigation */
+.checklist-item{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:var(--rops-faint)}
+.checklist-item .ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rops-border);flex:none;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s}
+.checklist-item.done{color:var(--rops-text)}
+.checklist-item.done .ck{background:var(--ok);border-color:var(--ok)}
+.checklist-item.done .ck svg{display:block}
+.checklist-item .ck svg{display:none;width:11px;height:11px}
+
+.timeline-list{position:relative;padding-left:18px}
+.timeline-list::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:1.5px;background:var(--rops-border)}
+.tl-item{position:relative;padding-bottom:16px;font-size:12.5px}
+.tl-item::before{content:"";position:absolute;left:-18px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--rops-surface)}
+.tl-item .t{font:700 11px var(--mono);color:var(--rops-faint)}
+.tl-item .d{color:var(--rops-text);margin-top:1px}
+
+.evi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:1000px){.evi-grid{grid-template-columns:repeat(2,1fr)}}
+.evi-card{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:14px}
+.evi-card .k{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--rops-faint);margin-bottom:6px}
+.evi-card .v{font:700 15px var(--mono);margin-bottom:4px}
+.evi-card .s{font-size:11px;color:var(--rops-dim);line-height:1.45}
+
+.confidence-wrap{display:flex;align-items:center;gap:16px;margin-top:14px}
+.conf-ring{position:relative;width:66px;height:66px;flex:none}
+.conf-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 15px var(--mono)}
+
+.remstep{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rops-border-soft)}
+.remstep:last-child{border:none}
+.remstep .n{width:22px;height:22px;border-radius:50%;background:var(--rops-surface2);border:1px solid var(--rops-border);display:flex;align-items:center;justify-content:center;font:700 11px var(--mono);flex:none;color:var(--rops-faint)}
+.remstep.active .n{border-color:var(--accent);color:var(--accent)}
+.remstep.done .n{background:var(--ok);border-color:var(--ok);color:#06251a}
+.remstep .txt{font-size:12.5px;color:var(--rops-dim);padding-top:1px}
+.remstep.done .txt{color:var(--rops-text)}
+.remstep .ts{margin-left:auto;font:600 10.5px var(--mono);color:var(--rops-faint);flex:none}
+
+.authbtn{
+  width:100%;padding:13px;border-radius:10px;border:none;font-size:13.5px;font-weight:800;letter-spacing:.01em;
+  background:linear-gradient(180deg,#5b9bff,var(--accent));color:#fff;margin-top:4px;
+}
+.authbtn:disabled{background:var(--rops-surface2);color:var(--rops-faint);border:1px solid var(--rops-border)}
+
+.report-field{display:grid;grid-template-columns:170px 1fr;gap:14px;padding:9px 0;border-bottom:1px solid var(--rops-border-soft);font-size:12.5px}
+.report-field .k{font-weight:700;color:var(--rops-faint);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em;padding-top:2px}
+.report-field .v{color:var(--rops-text);line-height:1.55}
+
+.empty-console{padding:60px 20px;text-align:center;color:var(--rops-faint);font-size:13px;max-width:420px;margin:0 auto}
+.empty-console svg{margin-bottom:14px;opacity:.5}
+
+@media (prefers-reduced-motion: reduce){
+  .mer-alert{animation:none}
+  .status-pill.bad{animation:none}
+  .pod-status.crash .d{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="simbar">
+  <div class="simbar-tag"><span class="dot"></span>LIVE SIMULATION</div>
+  <div class="envswitch" id="envSwitch">
+    <button class="envbtn active" data-env="store"><span class="b" style="background:var(--mer-accent)"></span>meridian.com — Storefront</button>
+    <button class="envbtn" data-env="rops"><span class="b" style="background:var(--accent)"></span>RemOpsAI Console</button>
+  </div>
+  <div class="simbar-spacer"></div>
+  <div class="status-pill" id="statusPill"><span class="pdot"></span><span id="statusPillText">All systems healthy</span></div>
+  <button class="btn btn-auto" id="autoplayToggle">⏸ Pause Autoplay</button>
+  <button class="btn btn-auto" id="replayBtn">⟲ Replay</button>
+  <button class="btn btn-ghost" id="resetBtn">Reset Demo</button>
+</div>
+
+<div class="viewport">
+  <div class="env active" id="env-store"></div>
+  <div class="env" id="env-rops"></div>
+</div>
+
+<div class="mer-toast" id="toast"></div>
+<div class="sim-cursor" id="simCursor"></div>
+<div class="sim-caption" id="simCaption"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   SHARED UTILS
+   ============================================================ */
+const $ = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const now=()=>new Date();
+const fmtTime=(d)=>d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const fmtMs=(ms)=> ms>=1000 ? (ms/1000).toFixed(2)+'s' : Math.round(ms)+'ms';
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function svgPoints(hist,w,h,min,max){
+  if(hist.length<2) return '';
+  const n=hist.length;
+  return hist.map((v,i)=>{
+    const x=(i/(n-1))*w;
+    const y=h-((clamp(v,min,max)-min)/(max-min||1))*h;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+}
+
+/* ============================================================
+   GLOBAL STATE
+   ============================================================ */
+const PHASES=['normal','incident','detecting','investigating','rootcause','remediation_ready','remediating','resolved'];
+const BROKEN_PHASES=new Set(['incident','detecting','investigating','rootcause','remediation_ready','remediating']);
+
+const state = {
+  phase:'normal',
+  timers:[],
+  heartbeat:null,
+  incident:null, // {id, severity, detectedAt, resolvedAt}
+  timeline:[],
+  evidence:[],
+  confidence:0,
+  investigation:{connected:[], traced:[]},
+  remediationSteps:[
+    {key:'rollback', label:'Rollback checkout-service deployment', done:false, ts:null},
+    {key:'drain', label:'Drain unhealthy checkout pods', done:false, ts:null},
+    {key:'dbrecover', label:'Verify PostgreSQL connection pool recovery', done:false, ts:null},
+    {key:'latency', label:'Checkout latency recovering', done:false, ts:null},
+    {key:'errorfall', label:'HTTP 500 rate falling', done:false, ts:null},
+    {key:'orders', label:'Confirm successful customer orders', done:false, ts:null},
+  ],
+  authorized:false,
+  logs:[],
+  pods:[
+    {name:'checkout-service-7f9d4c-2k9x', restarts:0, status:'run'},
+    {name:'checkout-service-7f9d4c-x81m', restarts:0, status:'run'},
+    {name:'checkout-service-7f9d4c-qw3v', restarts:0, status:'run'},
+    {name:'checkout-service-7f9d4c-h6bp', restarts:0, status:'run'},
+    {name:'checkout-service-7f9d4c-n0lz', restarts:0, status:'run'},
+    {name:'checkout-service-7f9d4c-t4ry', restarts:0, status:'run'},
+  ],
+  sessions:[],
+  failedCheckoutAttempts:0,
+  orderConfirmed:false,
+  orderConfirmedAt:null,
+  metrics:{
+    errorRate:{cur:0.15, hist:[], min:0, max:45, unit:'%', label:'Checkout Error Rate'},
+    p95:{cur:230, hist:[], min:0, max:5200, unit:'ms', label:'Checkout API p95 Latency'},
+    dbPool:{cur:41, hist:[], min:0, max:100, unit:'%', label:'DB Connection Pool'},
+    payTimeout:{cur:0.1, hist:[], min:0, max:35, unit:'%', label:'Payment Timeout Rate'},
+    orders:{cur:812, hist:[], min:0, max:2000, unit:'', label:'Successful Orders (5m)'},
+  },
+};
+
+function targetsFor(phase){
+  if(phase==='normal' || phase==='resolved'){
+    return {errorRate:0.15, p95:230, dbPool:41, payTimeout:0.1};
+  }
+  return {errorRate:38.7, p95:4800, dbPool:100, payTimeout:29.4};
+}
+
+/* ============================================================
+   LOGGING / EVENTS
+   ============================================================ */
+function pushLog(level, svc, msg, tsDate){
+  const e={ts:fmtTime(tsDate||now()), level, svc, msg};
+  state.logs.push(e);
+  if(state.logs.length>240) state.logs.shift();
+  if(state.rops.activeSection==='logs') renderLogsAppend(e);
+}
+function pushTimeline(text){
+  state.timeline.push({t:fmtTime(now()), d:text});
+  if(state.rops.activeSection==='investigation' || state.rops.activeSection==='command') renderActiveConsole();
+}
+function pushSession(text, ok){
+  state.sessions.unshift({sid:'#'+(8800+Math.floor(Math.random()*90)), t:text, ok, ts:fmtTime(now())});
+  if(state.sessions.length>30) state.sessions.pop();
+  if(state.rops.activeSection==='sessions') renderActiveConsole();
+}
+
+/* ============================================================
+   PHASE / INCIDENT ENGINE
+   ============================================================ */
+function schedule(fn, ms){
+  const id=setTimeout(fn, ms);
+  state.timers.push(id);
+  return id;
+}
+function clearTimers(){ state.timers.forEach(id=>clearTimeout(id)); state.timers=[]; }
+
+function setPhase(p){
+  state.phase=p;
+  updateStatusPill();
+  renderActiveConsole();
+  renderStoreCheckoutIfVisible();
+  updateTriggerBtn();
+}
+
+function startIncident(){
+  if(state.phase!=='normal') return;
+  state.incident={ id:'INC-'+(2100+Math.floor(Math.random()*800)), severity:'P1', detectedAt:null, resolvedAt:null };
+  state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
+  state.investigation={connected:[], traced:[]};
+  state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
+  state.failedCheckoutAttempts=0;
+
+  setPhase('incident');
+  pushLog('WARN','checkout-service','p99 latency exceeded 2000ms threshold on /v1/checkout/place-order');
+  pushLog('ERROR','order-service','context deadline exceeded calling payment-service');
+  flipPod(2,'restart');
+
+  schedule(()=>{
+    pushLog('ERROR','payment-service','upstream timeout after 5000ms (gateway: authnet-prod)');
+    pushLog('WARN','postgres-primary','connection wait time p95 = 1840ms');
+    pushTimeline('Checkout error rate begins increasing (0.2% → rising)');
+  },900);
+
+  schedule(()=>{
+    flipPod(0,'restart');
+    pushLog('ERROR','order-service','could not acquire db connection: pool exhausted (120/120 in use)');
+    pushTimeline('Payment API p95 latency increases (240ms → 4.8s)');
+  },2600);
+
+  schedule(()=>{
+    pushTimeline('PostgreSQL connection pool reaches saturation (100% utilized)');
+    flipPod(4,'crash');
+  },4200);
+
+  schedule(()=>{
+    state.incident.detectedAt=now();
+    setPhase('detecting');
+    pushTimeline('Checkout failures cross critical threshold — auto-detected by RemOps');
+    pushLog('ERROR','remops-detector','anomaly correlation triggered: checkout.error_rate + db.pool_utilization + payment.timeout_rate');
+  },5600);
+
+  schedule(()=>{
+    pushTimeline('Customer session telemetry shows repeated order failures');
+  },6600);
+
+  schedule(()=> startInvestigation(), 7600);
+}
+
+function flipPod(idx,status){
+  const p=state.pods[idx];
+  if(!p) return;
+  p.status=status;
+  if(status!=='run') p.restarts++;
+  if(state.rops.activeSection==='k8s') renderActiveConsole();
+}
+function healPods(){
+  state.pods.forEach((p,i)=>{
+    schedule(()=>{ p.status='run'; if(state.rops.activeSection==='k8s') renderActiveConsole(); }, 400*i+200);
+  });
+}
+
+const SIGNAL_SOURCES=['Customer Sessions','Application Logs','Metrics','Distributed Traces','Kubernetes','Database','Deployments','GitHub'];
+
+function startInvestigation(){
+  setPhase('investigating');
+  SIGNAL_SOURCES.forEach((s,i)=>{
+    schedule(()=>{
+      state.investigation.connected.push(s);
+      if(state.rops.activeSection==='investigation') renderActiveConsole();
+    }, 300*i);
+  });
+  const TRACE_HOPS=['Customer Session','Checkout API','Order Service','Payment Service','PostgreSQL','DB Connection Pool'];
+  schedule(()=>{
+    TRACE_HOPS.forEach((h,i)=>{
+      schedule(()=>{
+        state.investigation.traced.push(h);
+        if(state.rops.activeSection==='investigation'||state.rops.activeSection==='servicemap') renderActiveConsole();
+      }, 420*i);
+    });
+  }, 2600);
+
+  const EVIDENCE=[
+    {k:'Recent Deployment', v:'checkout-service', s:'8 minutes ago · v2.114.0 · commit a13f9c2 · deployed by j.romero'},
+    {k:'Database Connections', v:'42% → 100%', s:'PostgreSQL primary pool saturated shortly after deploy'},
+    {k:'Error Pattern', v:'connection pool exhausted', s:'1,842 occurrences across 6 checkout-service pods'},
+    {k:'Trace', v:'checkout → order → payment → postgres', s:'db.connection.acquire span: 240ms → 4.8s (p95)'},
+  ];
+  schedule(()=>{
+    EVIDENCE.forEach((e,i)=>{
+      schedule(()=>{
+        state.evidence.push(e);
+        if(state.rops.activeSection==='investigation') renderActiveConsole();
+      }, 550*i);
+    });
+  }, 5600);
+
+  schedule(()=> setPhase('rootcause'), 8200);
+  schedule(()=>{
+    animateConfidence(96);
+    pushTimeline('Root cause identified — checkout-service deployment linked to connection pool exhaustion');
+  }, 8400);
+
+  schedule(()=>{
+    setPhase('remediation_ready');
+    pushTimeline('Remediation plan generated — awaiting authorization');
+  }, 10600);
+}
+
+function animateConfidence(target){
+  let v=0;
+  const step=()=>{
+    v=Math.min(target, v+Math.ceil((target-v)*0.22)+3);
+    state.confidence=v;
+    if(state.rops.activeSection==='investigation') renderActiveConsole();
+    if(v<target) schedule(step,60);
+  };
+  step();
+}
+
+function authorizeRemediation(){
+  if(state.phase!=='remediation_ready') return;
+  state.authorized=true;
+  setPhase('remediating');
+  pushLog('INFO','remops-executor','remediation authorized — starting rollback of checkout-service');
+
+  const steps=state.remediationSteps;
+  const offsets=[900,2400,4000,5600,7200,8800];
+  const logs=[
+    ['INFO','deploy-controller','checkout-service rolled back: v2.114.0 → v2.113.2'],
+    ['INFO','k8s-controller','draining 6 unhealthy checkout-service pods, replacing with v2.113.2'],
+    ['INFO','postgres-primary','connection pool utilization falling: 100% → 63%'],
+    ['INFO','checkout-service','p95 latency recovering: 4.8s → 890ms'],
+    ['INFO','remops-monitor','HTTP 500 rate falling: 38.7% → 4.2%'],
+    ['INFO','order-service','successful order rate returning to baseline'],
+  ];
+  steps.forEach((st,i)=>{
+    schedule(()=>{
+      st.done=true; st.ts=fmtTime(now());
+      pushLog(logs[i][0],logs[i][1],logs[i][2]);
+      if(i===1) healPods();
+      if(state.rops.activeSection==='remediation'||state.rops.activeSection==='command') renderActiveConsole();
+    }, offsets[i]);
+  });
+
+  schedule(()=>{
+    state.incident.resolvedAt=now();
+    setPhase('resolved');
+    pushTimeline('Incident resolved — checkout error rate and DB pool utilization back to baseline');
+  }, 10200);
+}
+
+/* ============================================================
+   METRICS HEARTBEAT
+   ============================================================ */
+function heartbeatTick(){
+  const targets=targetsFor(state.phase);
+  const m=state.metrics;
+  const rate = state.phase==='remediating' ? 0.30 : 0.22;
+
+  m.errorRate.cur = clamp(lerp(m.errorRate.cur, targets.errorRate, rate) + rnd(-0.6,0.6), 0, 45);
+  m.p95.cur = clamp(lerp(m.p95.cur, targets.p95, rate) + rnd(-40,40), 150, 5200);
+  m.dbPool.cur = clamp(lerp(m.dbPool.cur, targets.dbPool, rate) + rnd(-1.5,1.5), 0, 100);
+  m.payTimeout.cur = clamp(lerp(m.payTimeout.cur, targets.payTimeout, rate) + rnd(-0.4,0.4), 0, 35);
+
+  const healthy = state.phase==='normal' || state.phase==='resolved';
+  m.orders.cur = clamp(m.orders.cur + (healthy ? (Math.random()<0.5? rnd(0.5,3):0) : (Math.random()<0.08? 1:0)), 0, 2000);
+
+  Object.values(m).forEach(mm=>{
+    mm.hist.push(mm.cur);
+    if(mm.hist.length>36) mm.hist.shift();
+  });
+
+  if(state.rops.activeSection==='command') renderKpisLive();
+  if(state.rops.activeSection==='metrics') renderMetricsLive();
+  if(state.rops.activeSection==='database') renderDbLive();
+  updateStatusPillSpark();
+}
+
+function ambientTick(){
+  if(state.phase==='normal' || state.phase==='resolved'){
+    const svcs=['api-gateway','checkout-service','inventory-service','search-service','order-service'];
+    const msgs=['request handled','health check ok','cache hit ratio 94.2%','GET /v1/products 200 OK','scaling check: nominal'];
+    pushLog('INFO', svcs[Math.floor(Math.random()*svcs.length)], msgs[Math.floor(Math.random()*msgs.length)]);
+  }
+}
+
+/* ============================================================
+   STATUS PILL / TRIGGER BUTTON
+   ============================================================ */
+function updateStatusPill(){
+  const el=$('#statusPill'), txt=$('#statusPillText');
+  el.className='status-pill';
+  const map={
+    normal:['All systems healthy',''],
+    incident:['Checkout degrading','bad'],
+    detecting:['P1 incident detected','bad'],
+    investigating:['RemOps investigating','bad'],
+    rootcause:['Root cause identified','warn'],
+    remediation_ready:['Awaiting authorization','warn'],
+    remediating:['Remediation in progress','recovering'],
+    resolved:['Incident resolved · healthy','']
+  };
+  const [t,cls]=map[state.phase];
+  if(cls) el.classList.add(cls);
+  txt.textContent=t;
+}
+function updateStatusPillSpark(){}
+function updateTriggerBtn(){}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetDemo(){
+  stopAutoplayScript();
+  clearTimers();
+  state.phase='normal';
+  state.incident=null;
+  state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
+  state.investigation={connected:[], traced:[]};
+  state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
+  state.failedCheckoutAttempts=0;
+  state.orderConfirmed=false; state.orderConfirmedAt=null;
+  state.sessions=[]; state.logs=[];
+  state.pods.forEach(p=>{p.restarts=0; p.status='run';});
+  state.metrics.errorRate.cur=0.15; state.metrics.p95.cur=230; state.metrics.dbPool.cur=41; state.metrics.payTimeout.cur=0.1;
+  Object.values(state.metrics).forEach(m=>m.hist=[]);
+  store.view='home'; store.selectedProduct=null; store.cart=[];
+  updateStatusPill(); updateTriggerBtn();
+  renderStore(); renderActiveConsole();
+}
+
+/* ============================================================
+   MERIDIAN STOREFRONT
+   ============================================================ */
+const PRODUCTS=[
+  {id:'p1', name:'AeroTrail Running Jacket', price:128, was:null, rating:4.7, revs:2384, emoji:'🧥', cat:'Apparel'},
+  {id:'p2', name:'Pulse Wireless Earbuds', price:89, was:119, rating:4.4, revs:9120, emoji:'🎧', cat:'Electronics'},
+  {id:'p3', name:'CraftBrew Pour-Over Kettle', price:54, was:null, rating:4.8, revs:641, emoji:'☕', cat:'Home'},
+  {id:'p4', name:'Summit 32L Trail Backpack', price:96, was:130, rating:4.6, revs:1875, emoji:'🎒', cat:'Outdoor'},
+  {id:'p5', name:'Voyager Trail Runner Sneakers', price:112, was:null, rating:4.5, revs:3402, emoji:'👟', cat:'Footwear'},
+  {id:'p6', name:'Halo Adjustable Desk Lamp', price:38, was:49, rating:4.3, revs:512, emoji:'💡', cat:'Home'},
+  {id:'p7', name:'Glacier Insulated Bottle 24oz', price:24, was:null, rating:4.9, revs:5210, emoji:'🧴', cat:'Outdoor'},
+  {id:'p8', name:'DriftFlow Yoga Mat', price:42, was:null, rating:4.6, revs:998, emoji:'🧘', cat:'Fitness'},
+];
+const store = { view:'home', query:'', selectedProduct:null, size:'M', color:'Storm Grey', img:0, qty:1, cart:[] };
+
+function money(n){ return '$'+n.toFixed(2); }
+function cartCount(){ return store.cart.reduce((n,i)=>n+i.qty,0); }
+function cartSubtotal(){ return store.cart.reduce((n,i)=>n+i.qty*i.price,0); }
+
+function toast(msg){
+  const t=$('#toast'); t.innerHTML=msg; t.classList.add('show');
+  clearTimeout(toast._id); toast._id=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function renderStore(){
+  const root=$('#env-store');
+  root.innerHTML = `
+    <div class="mer-addr"><span class="lockdot"></span>meridian.com/${store.view==='home'?'shop':store.view}</div>
+    <header class="mer-header">
+      <div class="mer-logo" data-nav="home">meri<span>dian</span></div>
+      <div class="mer-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="searchInput" placeholder="Search products, brands, categories…" value="${esc(store.query)}">
+      </div>
+      <nav class="mer-navlinks">
+        <a data-nav="home">Deals</a><a data-nav="home">Outdoor</a><a data-nav="home">Electronics</a><a data-nav="home">Home</a>
+      </nav>
+      <div class="mer-spacer"></div>
+      <button class="mer-cart" data-nav="cart">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+        Cart <span class="cnt">${cartCount()}</span>
+      </button>
+    </header>
+    <div class="mer-body" id="merBody"></div>
+  `;
+  renderStoreBody();
+  wireStoreChrome();
+}
+
+function wireStoreChrome(){
+  $$('[data-nav]').forEach(el=>el.addEventListener('click', ()=>{
+    const v=el.getAttribute('data-nav');
+    store.view = v;
+    if(v==='home') store.selectedProduct=null;
+    renderStoreBody();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }));
+  const si=$('#searchInput');
+  if(si) si.addEventListener('input', e=>{ store.query=e.target.value; renderProductGrid(); });
+}
+
+function renderStoreBody(){
+  const el=$('#merBody');
+  if(!el) return;
+  if(store.view==='home') el.innerHTML = homeHtml();
+  else if(store.view==='product') el.innerHTML = productHtml();
+  else if(store.view==='cart') el.innerHTML = cartHtml();
+  else if(store.view==='checkout') el.innerHTML = checkoutHtml();
+  else if(store.view==='confirm') el.innerHTML = confirmHtml();
+  wireStoreBody();
+}
+
+function homeHtml(){
+  return `
+    <div class="mer-hero">
+      <div>
+        <h1>Gear up for fall trails</h1>
+        <p>Free 2-day shipping on orders over $75. New arrivals across outdoor &amp; fitness.</p>
+        <span class="tag">Shop the sale →</span>
+      </div>
+    </div>
+    <div class="mer-grid-title">${store.query? 'Search results' : 'Recommended for you'}</div>
+    <div class="mer-grid" id="prodGrid"></div>
+  `;
+}
+function renderProductGrid(){
+  const grid=$('#prodGrid'); if(!grid) return;
+  const q=store.query.trim().toLowerCase();
+  const list = q ? PRODUCTS.filter(p=>p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)) : PRODUCTS;
+  grid.innerHTML = list.length ? list.map(productCard).join('') : `<div class="mer-empty" style="grid-column:1/-1">No products match “${esc(store.query)}”.</div>`;
+  $$('.mer-card',grid).forEach(c=>c.addEventListener('click', ()=>{
+    store.selectedProduct = c.getAttribute('data-id'); store.img=0;
+    store.view='product'; renderStoreBody(); window.scrollTo({top:0,behavior:'smooth'});
+  }));
+}
+function stars(r){
+  const full=Math.floor(r); let s='';
+  for(let i=0;i<5;i++) s += i<full ? '★' : '☆';
+  return s;
+}
+function productCard(p){
+  const bg = `linear-gradient(135deg, hsl(${p.id.charCodeAt(1)*37%360} 45% 92%), hsl(${p.id.charCodeAt(1)*37%360} 35% 82%))`;
+  return `<div class="mer-card" data-id="${p.id}">
+    <div class="mer-thumb" style="background:${bg}">${p.emoji}</div>
+    <div class="info">
+      <h3>${esc(p.name)}</h3>
+      <div class="mer-rating"><b>${stars(p.rating)}</b> ${p.rating} (${p.revs.toLocaleString()})</div>
+      <div class="mer-price">${money(p.price)} ${p.was?`<span style="font-size:11px;color:var(--mer-dim);font-weight:500;text-decoration:line-through;margin-left:5px">${money(p.was)}</span>`:''}</div>
+    </div>
+  </div>`;
+}
+
+function productHtml(){
+  const p = PRODUCTS.find(x=>x.id===store.selectedProduct) || PRODUCTS[0];
+  const imgs=['🖼️',p.emoji,'🖼️','🖼️'];
+  return `
+  <div class="mer-crumb"><a data-nav="home">Home</a> › <a data-nav="home">${p.cat}</a> › <span>${esc(p.name)}</span></div>
+  <div class="mer-pdp">
+    <div>
+      <div class="mer-gallery-main" style="background:linear-gradient(135deg,#efe9e0,#e2d8c8)">${imgs[store.img]}</div>
+      <div class="mer-gallery-thumbs">${imgs.map((e,i)=>`<div class="mer-gthumb ${i===store.img?'sel':''}" data-img="${i}" style="background:#f4f1eb">${e}</div>`).join('')}</div>
+    </div>
+    <div>
+      <h1>${esc(p.name)}</h1>
+      <div class="mer-rating"><b>${stars(p.rating)}</b> ${p.rating} · ${p.revs.toLocaleString()} reviews</div>
+      <div class="mer-pdp-price">${money(p.price)} ${p.was?`<span class="was">${money(p.was)}</span>`:''}</div>
+
+      <div class="mer-section-label">Size</div>
+      <div class="mer-swatches">${['XS','S','M','L','XL','XXL'].map(s=>`<button class="mer-pill ${store.size===s?'sel':''}" data-size="${s}">${s}</button>`).join('')}</div>
+
+      <div class="mer-section-label">Color</div>
+      <div class="mer-swatches">${['Storm Grey','Midnight','Rust'].map(c=>`<button class="mer-pill ${store.color===c?'sel':''}" data-color="${c}">${c}</button>`).join('')}</div>
+
+      <div class="mer-section-label">Quantity</div>
+      <div class="mer-qty">
+        <button data-qty="-1">−</button><span>${store.qty}</span><button data-qty="1">+</button>
+      </div>
+
+      <button class="mer-addcart" id="addCartBtn">Add to Cart — ${money(p.price*store.qty)}</button>
+
+      <div class="mer-reviews">
+        <div class="mer-section-label">Customer reviews</div>
+        ${reviewHtml('Alex P.','Verified Purchase','Held up great through three trail runs in the rain. Sizing runs true.')}
+        ${reviewHtml('Morgan T.','Verified Purchase','Lighter than I expected and packs down small. Would buy again.')}
+      </div>
+    </div>
+  </div>`;
+}
+function reviewHtml(who,tag,body){
+  return `<div class="mer-review"><div class="stars">${stars(5)}</div><p>${esc(body)}</p><div class="who">${esc(who)} · ${esc(tag)}</div></div>`;
+}
+
+function cartHtml(){
+  if(!store.cart.length) return `<div class="mer-cartview"><div class="mer-empty">Your cart is empty. <a data-nav="home" style="color:var(--mer-accent);cursor:pointer">Continue shopping →</a></div></div>`;
+  return `<div class="mer-cartview">
+    <h2 style="margin:0 0 6px">Shopping Cart</h2>
+    ${store.cart.map((it,i)=>`
+      <div class="mer-cart-row">
+        <div class="mer-cart-thumb" style="background:#f4f1eb">${it.emoji}</div>
+        <div class="meta"><h4>${esc(it.name)}</h4><div class="sub">Size ${it.size} · ${it.color} · Qty ${it.qty}</div></div>
+        <div class="price">${money(it.price*it.qty)}</div>
+      </div>`).join('')}
+    <div class="mer-summary">
+      <div class="line"><span>Subtotal</span><span>${money(cartSubtotal())}</span></div>
+      <div class="line"><span>Shipping</span><span>Calculated at checkout</span></div>
+      <div class="line total"><span>Estimated total</span><span>${money(cartSubtotal())}</span></div>
+      <button class="mer-cta" id="proceedCheckoutBtn" data-nav="checkout">Proceed to Checkout</button>
+    </div>
+  </div>`;
+}
+
+function checkoutTotals(){
+  const sub=cartSubtotal(); const ship=sub?6.5:0; const tax=+(sub*0.0825).toFixed(2);
+  return {sub, ship, tax, total:+(sub+ship+tax).toFixed(2)};
+}
+
+function checkoutHtml(){
+  if(!store.cart.length && !state.orderConfirmed) return `<div class="mer-cartview"><div class="mer-empty">Your cart is empty.</div></div>`;
+  const t=checkoutTotals();
+  const broken = BROKEN_PHASES.has(state.phase);
+  return `<div class="mer-checkout">
+    <div>
+      <h2 style="margin:0 0 16px">Checkout</h2>
+      ${state.failedCheckoutAttempts>0 ? `<div class="mer-alert"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><b>Unable to place order. Please try again.</b>We couldn't process your order right now.<span class="code">checkout_failed · attempt ${state.failedCheckoutAttempts}</span></div></div>`:''}
+      <div class="mer-card-panel">
+        <h3>Shipping Address</h3>
+        <div class="mer-field-row">
+          <div class="mer-field"><label>First name</label><input value="Jordan" /></div>
+          <div class="mer-field"><label>Last name</label><input value="Ellis" /></div>
+        </div>
+        <div class="mer-field"><label style="margin-bottom:6px;display:block">Street address</label><input value="482 Harbor View Dr" /></div>
+        <div class="mer-field-row" style="margin-top:12px">
+          <div class="mer-field"><label>City</label><input value="Austin" /></div>
+          <div class="mer-field"><label>State / ZIP</label><input value="TX 73301" /></div>
+        </div>
+      </div>
+      <div class="mer-card-panel">
+        <h3>Payment</h3>
+        <div class="mer-payrow"><span class="brand">VISA</span> •••• 4471 &nbsp; Exp 09/28</div>
+      </div>
+    </div>
+    <div>
+      <div class="mer-summary">
+        <h3 style="margin:0 0 12px;font-size:13.5px">Order Summary</h3>
+        ${store.cart.map(it=>`<div class="line"><span>${esc(it.name)} ×${it.qty}</span><span>${money(it.price*it.qty)}</span></div>`).join('')}
+        <div class="line"><span>Shipping</span><span>${money(t.ship)}</span></div>
+        <div class="line"><span>Tax</span><span>${money(t.tax)}</span></div>
+        <div class="line total"><span>Total</span><span>${money(t.total)}</span></div>
+        <button class="mer-cta" id="placeOrderBtn">Place Order</button>
+        <div style="font-size:10.5px;color:var(--mer-dim);text-align:center;margin-top:10px">${broken? 'System status: degraded' : 'Secure checkout · 256-bit encryption'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function confirmHtml(){
+  const t=store.lastOrderTotals || checkoutTotals();
+  return `<div class="mer-confirm">
+    <div class="ring"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#178a4c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <h1>Order Confirmed</h1>
+    <div class="ordno">Order #4829137</div>
+    <div class="mer-confirm-card">
+      ${store.lastOrderItems.map(it=>`<div class="line" style="display:flex;justify-content:space-between;padding:6px 0;font-size:12.5px;color:var(--mer-dim)"><span>${esc(it.name)} ×${it.qty}</span><span>${money(it.price*it.qty)}</span></div>`).join('')}
+      <div class="line total" style="display:flex;justify-content:space-between;border-top:1px solid var(--mer-border);margin-top:8px;padding-top:10px;font-weight:800"><span>Total charged</span><span>${money(t.total)}</span></div>
+      <div style="font-size:11.5px;color:var(--mer-dim);margin-top:12px">Estimated delivery: 3–5 business days to 482 Harbor View Dr, Austin, TX</div>
+    </div>
+    <button class="mer-cta secondary" data-nav="home" style="margin-top:20px">Continue Shopping</button>
+  </div>`;
+}
+
+function wireStoreBody(){
+  const grid=$('#prodGrid'); if(grid) renderProductGrid();
+
+  $$('[data-img]').forEach(b=>b.addEventListener('click',()=>{store.img=+b.getAttribute('data-img'); renderStoreBody();}));
+  $$('[data-size]').forEach(b=>b.addEventListener('click',()=>{store.size=b.getAttribute('data-size'); renderStoreBody();}));
+  $$('[data-color]').forEach(b=>b.addEventListener('click',()=>{store.color=b.getAttribute('data-color'); renderStoreBody();}));
+  $$('[data-qty]').forEach(b=>b.addEventListener('click',()=>{store.qty=clamp(store.qty+(+b.getAttribute('data-qty')),1,9); renderStoreBody();}));
+  $$('[data-nav]').forEach(el=>el.addEventListener('click', ()=>{
+    const v=el.getAttribute('data-nav'); store.view=v; renderStoreBody(); window.scrollTo({top:0,behavior:'smooth'});
+  }));
+
+  const addBtn=$('#addCartBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const p=PRODUCTS.find(x=>x.id===store.selectedProduct);
+    const existing=store.cart.find(i=>i.id===p.id && i.size===store.size && i.color===store.color);
+    if(existing) existing.qty+=store.qty;
+    else store.cart.push({id:p.id,name:p.name,price:p.price,emoji:p.emoji,size:store.size,color:store.color,qty:store.qty});
+    toast('✓ Added to cart — '+p.name);
+    renderStore();
+  });
+
+  const placeBtn=$('#placeOrderBtn');
+  if(placeBtn) placeBtn.addEventListener('click', handlePlaceOrder);
+}
+
+function renderStoreCheckoutIfVisible(){
+  if(store.view==='checkout') renderStoreBody();
+}
+
+function handlePlaceOrder(){
+  if(state.phase==='normal') startIncident();
+  const btn=$('#placeOrderBtn');
+  if(!btn || btn.disabled) return;
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> Processing payment…';
+  const broken = BROKEN_PHASES.has(state.phase);
+  setTimeout(()=>{
+    if(broken){
+      state.failedCheckoutAttempts++;
+      pushSession('order attempt failed — HTTP 500 (checkout_failed)', false);
+      pushLog('ERROR','checkout-api','POST /v1/checkout/place-order → 500 (upstream: payment-service timeout)');
+      renderStoreBody();
+    } else {
+      store.lastOrderItems = store.cart.map(i=>({...i}));
+      store.lastOrderTotals = checkoutTotals();
+      store.cart=[];
+      state.orderConfirmed=true; state.orderConfirmedAt=now();
+      pushSession('order placed successfully — #4829137', true);
+      pushLog('INFO','order-service','order #4829137 confirmed and queued for fulfillment');
+      store.view='confirm';
+      renderStore();
+    }
+  }, 950);
+}
+
+/* ============================================================
+   REMOPSAI CONSOLE
+   ============================================================ */
+state.rops = { activeSection:'command' };
+
+const NAV_ITEMS=[
+  {sec:'command', label:'Incident Command', icon:iconAlert, group:'Overview'},
+  {sec:'servicemap', label:'Service Map', icon:iconMap, group:'Overview'},
+  {sec:'investigation', label:'Investigation', icon:iconSearch, group:'Overview'},
+  {sec:'remediation', label:'Remediation', icon:iconWrench, group:'Overview'},
+  {sec:'metrics', label:'Metrics', icon:iconChart, group:'Telemetry'},
+  {sec:'logs', label:'Logs', icon:iconLogs, group:'Telemetry'},
+  {sec:'traces', label:'Traces', icon:iconTrace, group:'Telemetry'},
+  {sec:'k8s', label:'Kubernetes', icon:iconK8s, group:'Infrastructure'},
+  {sec:'database', label:'Database', icon:iconDb, group:'Infrastructure'},
+  {sec:'deployments', label:'Deployments', icon:iconDeploy, group:'Infrastructure'},
+  {sec:'github', label:'GitHub', icon:iconGh, group:'Infrastructure'},
+  {sec:'sessions', label:'Customer Sessions', icon:iconUsers, group:'Infrastructure'},
+  {sec:'report', label:'Incident Report', icon:iconReport, group:'Overview'},
+];
+
+function iconAlert(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;}
+function iconMap(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9"/></svg>`;}
+function iconSearch(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;}
+function iconWrench(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 1 5.4-5.4z"/></svg>`;}
+function iconChart(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 3 5-7"/></svg>`;}
+function iconLogs(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>`;}
+function iconTrace(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg>`;}
+function iconK8s(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4.5v11L12 22l-8-4.5v-11z"/><path d="M12 22V12M20 6.5L12 12 4 6.5"/></svg>`;}
+function iconDb(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>`;}
+function iconDeploy(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v14M6 10l6 6 6-6"/><path d="M4 20h16"/></svg>`;}
+function iconGh(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.7 5.6.7 12c0 5.1 3.3 9.4 7.9 11 .6.1.8-.2.8-.6v-2.1c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2 0 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2A11 11 0 0 1 12 6.2c1 0 2.1.1 3.1.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.7.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.6 7.9-5.9 7.9-11C23.3 5.6 18.3.5 12 .5z"/></svg>`;}
+function iconUsers(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>`;}
+function iconReport(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6M9 9h1"/></svg>`;}
+
+function renderRopsShell(){
+  const groups=['Overview','Telemetry','Infrastructure'];
+  const nav = groups.map(g=>`
+    <div class="navsec">${g}</div>
+    ${NAV_ITEMS.filter(n=>n.group===g).map(n=>{
+      const disabled = n.sec==='report' && !(state.incident && state.incident.resolvedAt);
+      const badge = n.sec==='command' && BROKEN_PHASES.has(state.phase) ? `<span class="nbadge">P1</span>` :
+                    n.sec==='report' && state.incident && state.incident.resolvedAt ? `<span class="nbadge ok">NEW</span>` : '';
+      return `<button class="navitem ${state.rops.activeSection===n.sec?'active':''}" data-sec="${n.sec}" ${disabled?'disabled':''}>${n.icon()}${n.label}${badge}</button>`;
+    }).join('')}
+  `).join('');
+
+  $('#env-rops').innerHTML = `
+    <div class="rops-shell">
+      <div class="rops-side">
+        <div class="rops-brand">
+          <div class="rops-mark"><svg viewBox="0 0 26 26"><path d="M4 15l4-8 4 12 3-9 3 6 4-9" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <b>RemOps<span>AI</span></b>
+        </div>
+        ${nav}
+      </div>
+      <div class="rops-main" id="ropsMain"></div>
+    </div>
+  `;
+  $$('.navitem',$('#env-rops')).forEach(b=>b.addEventListener('click', ()=>{
+    if(b.disabled) return;
+    state.rops.activeSection=b.getAttribute('data-sec');
+    renderRopsShell();
+  }));
+  renderConsoleSection();
+}
+function renderActiveConsole(){
+  renderRopsShell();
+}
+
+function sevTopline(title){
+  const inc=state.incident;
+  return `<div class="rops-topline">
+    <h1>${title}</h1>
+    ${inc? `<span class="sev-badge">${inc.severity} · ${inc.id}</span>`:''}
+    ${inc? `<span class="meta">${inc.resolvedAt? 'Resolved '+fmtTime(inc.resolvedAt) : 'Detected '+(inc.detectedAt?fmtTime(inc.detectedAt):'—')}</span>`:''}
+  </div>`;
+}
+
+function renderConsoleSection(){
+  const el=$('#ropsMain'); if(!el) return;
+  const sec=state.rops.activeSection;
+  if(sec==='command') el.innerHTML = sectionCommand();
+  else if(sec==='servicemap') el.innerHTML = sectionServiceMap();
+  else if(sec==='investigation') el.innerHTML = sectionInvestigation();
+  else if(sec==='remediation') el.innerHTML = sectionRemediation();
+  else if(sec==='metrics') el.innerHTML = sectionMetrics();
+  else if(sec==='logs') el.innerHTML = sectionLogs();
+  else if(sec==='traces') el.innerHTML = sectionTraces();
+  else if(sec==='k8s') el.innerHTML = sectionK8s();
+  else if(sec==='database') el.innerHTML = sectionDatabase();
+  else if(sec==='deployments') el.innerHTML = sectionDeployments();
+  else if(sec==='github') el.innerHTML = sectionGithub();
+  else if(sec==='sessions') el.innerHTML = sectionSessions();
+  else if(sec==='report') el.innerHTML = sectionReport();
+  wireConsoleSection(sec);
+}
+
+/* ---- Incident Command ---- */
+function sectionCommand(){
+  const p=state.phase;
+  let banner;
+  if(p==='normal') banner = bannerHtml('b-idle','✓','All Systems Healthy','No active incidents. Checkout, payments, inventory, search and infrastructure are operating within normal thresholds.');
+  else if(p==='incident') banner = bannerHtml('b-bad','!','Checkout Failures Increasing','Elevated error rate detected on checkout-service. RemOps is correlating signals across services.');
+  else if(p==='detecting') banner = bannerHtml('b-bad','!','P1 INCIDENT DETECTED','Checkout failures increasing — customers are unable to complete orders. Automatic detection triggered.');
+  else if(p==='investigating') banner = bannerHtml('b-bad','↻','Investigation In Progress','RemOps is correlating logs, metrics, traces, Kubernetes, database and deployment signals across the stack.');
+  else if(p==='rootcause') banner = bannerHtml('b-warn','✓','Root Cause Identified','Recent checkout-service deployment increased database connections per request, exhausting the PostgreSQL connection pool.');
+  else if(p==='remediation_ready') banner = bannerHtml('b-warn','⏸','Awaiting Authorization','A remediation plan has been generated. Review it in Remediation and authorize execution.');
+  else if(p==='remediating') banner = bannerHtml('b-info','↻','Remediation In Progress','Rolling back checkout-service and restoring healthy connection pool levels.');
+  else banner = bannerHtml('b-ok','✓','Incident Resolved','checkout-service has been rolled back and verified healthy. Customer checkout is restored.');
+
+  return `
+    ${sevTopline('Incident Command Center')}
+    ${banner}
+    <div class="kpi-row" id="kpiRow">${kpiRowHtml()}</div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h2>Fleet Health</h2></div>
+        ${fleetHealthHtml()}
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Incident Timeline</h2><span class="sub">${state.timeline.length} events</span></div>
+        ${state.timeline.length ? timelineHtml() : `<div class="empty-console" style="padding:20px 10px">No active incident timeline.</div>`}
+      </div>
+    </div>
+    ${p==='remediation_ready' ? `<div class="panel"><div class="panel-h"><h2>Quick Action</h2></div><button class="authbtn" id="quickAuth">Authorize Remediation</button></div>` : ''}
+  `;
+}
+function bannerHtml(cls,glyph,title,body){
+  return `<div class="banner ${cls}">
+    <div class="bicon" style="background:rgba(255,255,255,.08)">${glyph}</div>
+    <div><h3>${title}</h3><p>${body}</p></div>
+  </div>`;
+}
+function fleetHealthHtml(){
+  const broken=BROKEN_PHASES.has(state.phase);
+  const services=[
+    ['Checkout', broken],
+    ['Payments', state.phase==='incident'||state.phase==='detecting'||state.phase==='investigating'||state.phase==='rootcause'||state.phase==='remediation_ready'],
+    ['Inventory', false],
+    ['Search', false],
+    ['Orders', broken],
+    ['Infrastructure', state.phase==='investigating'||state.phase==='rootcause'||state.phase==='remediation_ready'],
+  ];
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    ${services.map(([name,bad])=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:10px;padding:10px 12px">
+        <span style="font-size:12.5px;font-weight:600">${name}</span>
+        <span style="display:flex;align-items:center;gap:6px;font:700 11px var(--mono);color:${bad?'var(--danger)':'var(--ok)'}">
+          <span style="width:7px;height:7px;border-radius:50%;background:currentColor"></span>${bad?'Degraded':'Healthy'}
+        </span>
+      </div>`).join('')}
+  </div>`;
+}
+function timelineHtml(){
+  return `<div class="timeline-list">${state.timeline.map(e=>`<div class="tl-item"><div class="t">${e.t}</div><div class="d">${e.d}</div></div>`).join('')}</div>`;
+}
+
+function kpiRowHtml(){
+  const m=state.metrics;
+  const items=[
+    ['errorRate', m.errorRate.cur.toFixed(1)+'%', m.errorRate.cur>10?'bad':m.errorRate.cur>2?'warn':'ok'],
+    ['p95', (m.p95.cur/1000).toFixed(2)+'s', m.p95.cur>1500?'bad':m.p95.cur>500?'warn':'ok'],
+    ['dbPool', Math.round(m.dbPool.cur)+'%', m.dbPool.cur>90?'bad':m.dbPool.cur>65?'warn':'ok'],
+    ['payTimeout', m.payTimeout.cur.toFixed(1)+'%', m.payTimeout.cur>10?'bad':m.payTimeout.cur>2?'warn':'ok'],
+    ['pods', state.pods.filter(p=>p.status!=='run').length+' / '+state.pods.length, state.pods.some(p=>p.status!=='run')?'bad':'ok'],
+    ['orders', Math.round(m.orders.cur), 'ok'],
+  ];
+  const labels={errorRate:'Error Rate',p95:'P95 Latency',dbPool:'DB Pool',payTimeout:'Pay Timeout',pods:'Unhealthy Pods',orders:'Orders (5m)'};
+  return items.map(([k,v,cls])=>`
+    <div class="kpi" data-kpi="${k}">
+      <div class="lbl">${labels[k]}</div>
+      <div class="val ${cls}" data-val>${v}</div>
+      ${m[k] ? `<svg class="spark" data-spark viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${svgPoints(m[k].hist,100,24,m[k].min,m[k].max)}" fill="none" stroke="${cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)'}" stroke-width="2"/></svg>` : ''}
+    </div>`).join('');
+}
+function renderKpisLive(){
+  const row=$('#kpiRow'); if(!row) return;
+  row.innerHTML = kpiRowHtml();
+}
+
+/* ---- Service Map ---- */
+function sectionServiceMap(){
+  return `
+    ${sevTopline('Service Map')}
+    <div class="panel">
+      <div class="panel-h"><h2>Production Dependency Graph</h2><span class="sub">meridian-prod · us-east-1</span></div>
+      ${serviceMapSvg()}
+    </div>
+  `;
+}
+const MAP_NODES=[
+  {id:'Customer Session', x:60, y:130, w:150},
+  {id:'Checkout API', x:270, y:60, w:130},
+  {id:'Order Service', x:460, y:130, w:130},
+  {id:'Payment Service', x:650, y:60, w:140},
+  {id:'PostgreSQL', x:460, y:220, w:120},
+  {id:'DB Connection Pool', x:650, y:220, w:160},
+];
+const MAP_EDGES=[['Customer Session','Checkout API'],['Checkout API','Order Service'],['Order Service','Payment Service'],['Order Service','PostgreSQL'],['PostgreSQL','DB Connection Pool']];
+function nodeState(name){
+  const traced=state.investigation.traced.includes(name);
+  const broken = BROKEN_PHASES.has(state.phase);
+  const badNodes=['Checkout API','Order Service','Payment Service','PostgreSQL','DB Connection Pool'];
+  if(!broken) return {color:'var(--ok)', label:'Healthy'};
+  if(state.phase==='remediating' || state.phase==='resolved') return {color:'var(--ok)', label:'Recovering'};
+  if(name==='DB Connection Pool' && (state.phase==='rootcause'||state.phase==='remediation_ready')) return {color:'var(--danger)', label:'Saturated — Root Cause'};
+  if(traced) return {color:'var(--warn)', label:badNodes.includes(name)?'Degraded':'Traced'};
+  if(badNodes.includes(name)) return {color:'var(--danger)', label:'Degraded'};
+  return {color:'var(--ok)', label:'Healthy'};
+}
+function serviceMapSvg(){
+  const nx=n=>n.x, ny=n=>n.y;
+  const edges=MAP_EDGES.map(([a,b])=>{
+    const A=MAP_NODES.find(n=>n.id===a), B=MAP_NODES.find(n=>n.id===b);
+    const traced = state.investigation.traced.includes(a) && state.investigation.traced.includes(b);
+    const x1=A.x+A.w, y1=A.y+18, x2=B.x, y2=B.y+18;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${traced?'var(--accent)':'#2a3450'}" stroke-width="${traced?2.5:1.5}" marker-end="url(#arrow)"/>`;
+  }).join('');
+  const nodes=MAP_NODES.map(n=>{
+    const st=nodeState(n.id);
+    return `<g>
+      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="36" rx="9" fill="var(--rops-surface2)" stroke="${st.color}" stroke-width="1.5"/>
+      <circle cx="${n.x+14}" cy="${n.y+18}" r="4" fill="${st.color}"/>
+      <text x="${n.x+24}" y="${n.y+16}" class="svcnode-label">${n.id}</text>
+      <text x="${n.x+24}" y="${n.y+28}" class="svcnode-sub" fill="${st.color}">${st.label}</text>
+    </g>`;
+  }).join('');
+  return `<svg class="svcmap" viewBox="0 0 820 280">
+    <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#3a4666"/></marker></defs>
+    ${edges}${nodes}
+  </svg>`;
+}
+
+/* ---- Investigation ---- */
+function sectionInvestigation(){
+  const conn=state.investigation.connected;
+  return `
+    ${sevTopline('Investigation')}
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h2>Signal Sources</h2><span class="sub">${conn.length}/${SIGNAL_SOURCES.length} connected</span></div>
+        ${SIGNAL_SOURCES.map(s=>`
+          <div class="checklist-item ${conn.includes(s)?'done':''}">
+            <span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="#06251a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>${s}
+          </div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Correlated Timeline</h2></div>
+        ${state.timeline.length ? timelineHtml() : `<div class="empty-console" style="padding:10px">Waiting for signals…</div>`}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Dependency Trace</h2><span class="sub">${state.investigation.traced.length}/${MAP_NODES.length} hops traced</span></div>
+      ${serviceMapSvg()}
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Evidence</h2></div>
+      ${state.evidence.length ? `<div class="evi-grid">${state.evidence.map(e=>`
+        <div class="evi-card"><div class="k">${e.k}</div><div class="v">${e.v}</div><div class="s">${e.s}</div></div>`).join('')}</div>`
+        : `<div class="empty-console" style="padding:10px">No evidence gathered yet.</div>`}
+      ${state.confidence>0 ? `
+        <div class="banner b-warn" style="margin-top:16px">
+          <div class="bicon" style="background:rgba(255,255,255,.08)">✓</div>
+          <div style="flex:1">
+            <h3>ROOT CAUSE IDENTIFIED</h3>
+            <p>Recent checkout-service deployment increased database connections per request, exhausting the PostgreSQL connection pool under production traffic.</p>
+            <div class="confidence-wrap">
+              ${confRingSvg(state.confidence)}
+              <div><div style="font-size:11px;color:var(--rops-faint)">Confidence score</div><div style="font-size:11.5px;color:var(--rops-dim);max-width:360px">Based on ${state.evidence.length} correlated evidence sources across deployments, database and traces.</div></div>
+            </div>
+          </div>
+        </div>` : ''}
+    </div>
+  `;
+}
+function confRingSvg(pct){
+  const r=27, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<svg class="conf-ring" viewBox="0 0 66 66">
+    <circle cx="33" cy="33" r="${r}" fill="none" stroke="#232c40" stroke-width="6"/>
+    <circle cx="33" cy="33" r="${r}" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 33 33)" style="transition:stroke-dashoffset .3s"/>
+  </svg><div class="num" style="position:relative;width:0;height:0"><span style="position:relative;left:-49px;top:-44px;font:700 14px var(--mono)">${pct}%</span></div>`;
+}
+
+/* ---- Remediation ---- */
+function sectionRemediation(){
+  const ready = state.phase==='remediation_ready';
+  const active = state.phase==='remediating' || state.phase==='resolved';
+  return `
+    ${sevTopline('Remediation')}
+    <div class="panel">
+      <div class="panel-h"><h2>Remediation Plan</h2><span class="sub">checkout-service v2.114.0 → v2.113.2</span></div>
+      ${!ready && !active ? `<div class="empty-console" style="padding:24px 10px">${state.phase==='normal'?'No active incident.':'RemOps is still investigating — plan not yet generated.'}</div>` : `
+      ${state.remediationSteps.map((s,i)=>`
+        <div class="remstep ${s.done?'done':(!active && i===0 && ready?'active':'')}">
+          <div class="n">${s.done?'✓':i+1}</div>
+          <div class="txt">${s.label}</div>
+          ${s.ts?`<div class="ts">${s.ts}</div>`:''}
+        </div>`).join('')}
+      <button class="authbtn" id="authBtn" ${!ready?'disabled':''}>${active?(state.phase==='resolved'?'Remediation Complete':'Remediation In Progress…'):'Authorize Remediation'}</button>
+      `}
+    </div>
+    ${(ready||active) ? `<div class="panel">
+      <div class="panel-h"><h2>Target Deployment</h2></div>
+      <div class="dep-row flagged"><div class="dep-dot"></div><div class="body">
+        <div class="ver">checkout-service v2.114.0 <span class="flag">FLAGGED</span></div>
+        <div class="sub">Deployed 8 min before incident · commit a13f9c2 · j.romero</div>
+      </div></div>
+      <div class="dep-row"><div class="dep-dot" style="background:var(--ok)"></div><div class="body">
+        <div class="ver">Rollback target: v2.113.2</div>
+        <div class="sub">Last known healthy release · 7-day baseline match</div>
+      </div></div>
+    </div>` : ''}
+  `;
+}
+
+/* ---- Metrics ---- */
+function metricChart(m, key, cls){
+  const color = cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)';
+  const val = key==='p95' ? (m.cur/1000).toFixed(2)+'s' : key==='orders' ? Math.round(m.cur) : m.cur.toFixed(1)+m.unit;
+  return `<div class="chartcard" data-mkey="${key}">
+    <div class="top"><span class="t">${m.label}</span><span class="v" data-mval>${val}</span></div>
+    <svg viewBox="0 0 200 64" preserveAspectRatio="none"><polyline data-mline points="${svgPoints(m.hist,200,64,m.min,m.max)}" fill="none" stroke="${color}" stroke-width="2.5"/></svg>
+  </div>`;
+}
+function sectionMetrics(){
+  const m=state.metrics;
+  const clsOf = (k,v)=> k==='errorRate'? (v>10?'bad':v>2?'warn':'ok') : k==='p95'? (v>1500?'bad':v>500?'warn':'ok') : k==='dbPool'? (v>90?'bad':v>65?'warn':'ok') : k==='payTimeout'? (v>10?'bad':v>2?'warn':'ok') : 'ok';
+  return `
+    ${sevTopline('Metrics')}
+    <div class="panel">
+      <div class="panel-h"><h2>Live Production Metrics</h2><span class="sub">refreshing every 0.7s · meridian-prod</span></div>
+      <div class="grid2" id="metricsGrid">
+        ${metricChart(m.errorRate,'errorRate',clsOf('errorRate',m.errorRate.cur))}
+        ${metricChart(m.p95,'p95',clsOf('p95',m.p95.cur))}
+        ${metricChart(m.dbPool,'dbPool',clsOf('dbPool',m.dbPool.cur))}
+        ${metricChart(m.payTimeout,'payTimeout',clsOf('payTimeout',m.payTimeout.cur))}
+      </div>
+      <div style="margin-top:12px">${metricChart(m.orders,'orders','ok')}</div>
+    </div>
+  `;
+}
+function renderMetricsLive(){
+  const grid=$('#ropsMain'); if(!grid || state.rops.activeSection!=='metrics') return;
+  const m=state.metrics;
+  const clsOf = (k,v)=> k==='errorRate'? (v>10?'bad':v>2?'warn':'ok') : k==='p95'? (v>1500?'bad':v>500?'warn':'ok') : k==='dbPool'? (v>90?'bad':v>65?'warn':'ok') : k==='payTimeout'? (v>10?'bad':v>2?'warn':'ok') : 'ok';
+  ['errorRate','p95','dbPool','payTimeout','orders'].forEach(k=>{
+    const card=$(`.chartcard[data-mkey="${k}"]`,grid); if(!card) return;
+    const mm=m[k]; const cls=clsOf(k,mm.cur);
+    const color = cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)';
+    card.querySelector('[data-mval]').textContent = k==='p95' ? (mm.cur/1000).toFixed(2)+'s' : k==='orders' ? Math.round(mm.cur) : mm.cur.toFixed(1)+mm.unit;
+    const line=card.querySelector('[data-mline]');
+    line.setAttribute('points', svgPoints(mm.hist,200,64,mm.min,mm.max));
+    line.setAttribute('stroke', color);
+  });
+}
+
+/* ---- Logs ---- */
+function sectionLogs(){
+  return `
+    ${sevTopline('Logs')}
+    <div class="panel">
+      <div class="panel-h"><h2>Application Logs</h2><span class="sub">checkout-service, order-service, payment-service, postgres-primary</span></div>
+      <div class="logbox" id="logbox">${state.logs.slice(-120).map(logLineHtml).join('')}</div>
+    </div>
+  `;
+}
+function logLineHtml(e){
+  return `<div class="logline ${e.level}"><span class="ts">${e.ts}</span><span class="lvl">${e.level}</span><span class="svc">${e.svc}</span><span class="msg">${esc(e.msg)}</span></div>`;
+}
+function renderLogsAppend(e){
+  const box=$('#logbox'); if(!box) return;
+  box.insertAdjacentHTML('beforeend', logLineHtml(e));
+  box.scrollTop = box.scrollHeight;
+  while(box.children.length>160) box.removeChild(box.firstChild);
+}
+
+/* ---- Traces ---- */
+function sectionTraces(){
+  const broken=BROKEN_PHASES.has(state.phase) && state.phase!=='remediating';
+  const recovering = state.phase==='remediating';
+  const spans=[
+    ['checkout-service', broken?4800:recovering?1400:210],
+    ['order-service', broken?4200:recovering?1050:150],
+    ['payment-service', broken?1600:recovering?520:80],
+    ['db.connection.acquire', broken?3900:recovering?900:12],
+  ];
+  const maxDur=Math.max(...spans.map(s=>s[1]),300);
+  return `
+    ${sevTopline('Traces')}
+    <div class="panel">
+      <div class="panel-h"><h2>Trace — POST /v1/checkout/place-order</h2><span class="sub">${broken?'trace_id 9c14ef2a · status: error':'trace_id 771ab30f · status: ok'}</span></div>
+      ${spans.map(([svc,dur])=>{
+        const pct=Math.max(3,(dur/maxDur)*100);
+        const slow = dur>1000;
+        return `<div class="trace-row">
+          <span class="trace-svc">${svc}</span>
+          <div class="trace-bar-track"><div class="trace-bar ${slow?'slow':''}" style="width:${pct}%"></div></div>
+          <span class="trace-dur ${slow?'slow':''}">${fmtMs(dur)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* ---- Kubernetes ---- */
+function sectionK8s(){
+  return `
+    ${sevTopline('Kubernetes')}
+    <div class="panel">
+      <div class="panel-h"><h2>Deployment: checkout-service</h2><span class="sub">namespace: prod · replicas: ${state.pods.length}</span></div>
+      <table class="k8s"><thead><tr><th>Pod</th><th>Status</th><th>Restarts</th><th>CPU</th><th>Memory</th></tr></thead>
+      <tbody>${state.pods.map(p=>`
+        <tr><td>${p.name}</td>
+        <td>${podStatusHtml(p.status)}</td>
+        <td>${p.restarts}</td>
+        <td>${p.status==='crash'?rndFixed(180,240):rndFixed(40,90)}m</td>
+        <td>${p.status==='crash'?rndFixed(410,480):rndFixed(140,210)}Mi</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  `;
+}
+function rndFixed(a,b){return Math.round(rnd(a,b));}
+function podStatusHtml(s){
+  if(s==='run') return `<span class="pod-status run"><span class="d"></span>Running</span>`;
+  if(s==='restart') return `<span class="pod-status restart"><span class="d"></span>Restarting</span>`;
+  return `<span class="pod-status crash"><span class="d"></span>CrashLoopBackOff</span>`;
+}
+
+/* ---- Database ---- */
+function sectionDatabase(){
+  const pct=state.metrics.dbPool.cur;
+  return `
+    ${sevTopline('Database')}
+    <div class="panel">
+      <div class="panel-h"><h2>PostgreSQL — primary</h2><span class="sub">meridian-prod-pg-01 · max_connections 120</span></div>
+      <div class="gaugewrap" style="margin-bottom:10px">
+        <div class="num" id="dbPoolNum">${Math.round(pct)}%</div>
+        <div class="cap">pool utilization<br><span style="font-family:var(--mono)">${Math.round(pct*1.2)}/120 connections</span></div>
+      </div>
+      <div class="pool-bar-track"><div class="pool-bar ${pct>85?'crit':''}" id="dbPoolBar" style="width:${pct}%"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-h"><h2>Connections by service</h2></div>
+        ${['checkout-service','order-service','payment-service','inventory-service'].map((s,i)=>{
+          const bad=BROKEN_PHASES.has(state.phase) && state.phase!=='remediating' && s==='checkout-service';
+          return `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12.5px;color:var(--rops-dim)"><span>${s}</span><span style="font-family:var(--mono);font-weight:700;color:${bad?'var(--danger)':'var(--rops-text)'}">${bad?rndFixed(85,120):rndFixed(4,18)}</span></div>`;
+        }).join('')}
+      </div>
+      <div class="panel"><div class="panel-h"><h2>Slow Queries</h2></div>
+        ${BROKEN_PHASES.has(state.phase) && state.phase!=='remediating' ? `<div class="empty-console" style="padding:10px;color:var(--danger)">42 queries waiting &gt;2s for a connection</div>` : `<div class="empty-console" style="padding:10px">No slow queries.</div>`}
+      </div>
+    </div>
+  `;
+}
+function renderDbLive(){
+  if(state.rops.activeSection!=='database') return;
+  const num=$('#dbPoolNum'), bar=$('#dbPoolBar');
+  if(!num||!bar) return;
+  const pct=state.metrics.dbPool.cur;
+  num.textContent=Math.round(pct)+'%';
+  bar.style.width=pct+'%';
+  bar.classList.toggle('crit', pct>85);
+}
+
+/* ---- Deployments ---- */
+function sectionDeployments(){
+  const flagged = state.phase!=='normal';
+  return `
+    ${sevTopline('Deployments')}
+    <div class="panel">
+      <div class="panel-h"><h2>checkout-service — deploy history</h2></div>
+      <div class="dep-row ${flagged?'flagged':''}"><div class="dep-dot"></div><div class="body">
+        <div class="ver">v2.114.0 ${flagged?'<span class="flag">FLAGGED</span>':''}</div>
+        <div class="sub">8 min before incident · commit a13f9c2 · j.romero · feat(checkout): add per-item inventory reservation check</div>
+        ${(state.phase==='remediation_ready') ? `<button class="rollback-btn" id="deployRollbackBtn">Rollback to v2.113.2</button>` : ''}
+      </div></div>
+      <div class="dep-row"><div class="dep-dot" style="background:var(--ok)"></div><div class="body">
+        <div class="ver">v2.113.2</div><div class="sub">Stable for 11 days · commit 9b02e41 · m.chen</div>
+      </div></div>
+      <div class="dep-row"><div class="dep-dot" style="background:var(--ok)"></div><div class="body">
+        <div class="ver">v2.113.1</div><div class="sub">18 days ago · commit 5f7c810 · j.romero</div>
+      </div></div>
+    </div>
+  `;
+}
+
+/* ---- GitHub ---- */
+function sectionGithub(){
+  return `
+    ${sevTopline('GitHub')}
+    <div class="panel">
+      <div class="panel-h"><h2>meridian/checkout-service</h2></div>
+      <div class="gh-card">
+        <div class="title">#4471 feat(checkout): add per-item inventory reservation check</div>
+        <div class="meta">merged by j.romero · into main · 8 min before incident · a13f9c2</div>
+        <div class="gh-diff"><span class="add">+142</span><span class="del">−38</span><span>4 files changed</span></div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--rops-dim);line-height:1.6">
+        Diff opens a new PostgreSQL connection per cart line item during reservation checks instead of reusing the
+        pooled connection, increasing average connections-per-request from 2.1 to 7.8 under peak traffic.
+      </div>
+    </div>
+  `;
+}
+
+/* ---- Customer Sessions ---- */
+function sectionSessions(){
+  return `
+    ${sevTopline('Customer Sessions')}
+    <div class="panel">
+      <div class="panel-h"><h2>Live Session Activity</h2><span class="sub">checkout funnel · meridian.com</span></div>
+      ${state.sessions.length ? state.sessions.map(s=>`
+        <div class="sess-row"><span class="sid">${s.sid}</span><span class="txt">${esc(s.t)}</span><span class="badge ${s.ok?'ok':'fail'}">${s.ok?'SUCCESS':'FAILED'}</span><span class="ts">${s.ts}</span></div>
+      `).join('') : `<div class="empty-console" style="padding:10px">No session events yet. Try placing an order on the storefront.</div>`}
+    </div>
+  `;
+}
+
+/* ---- Report ---- */
+function sectionReport(){
+  const inc=state.incident;
+  if(!inc || !inc.resolvedAt){
+    return `${sevTopline('Incident Report')}<div class="panel"><div class="empty-console">Report will be generated automatically once the incident is resolved.</div></div>`;
+  }
+  const durMs = inc.resolvedAt - inc.detectedAt;
+  const rows=[
+    ['Incident', 'Checkout Order Failures ('+inc.id+')'],
+    ['Severity', inc.severity+' — Critical'],
+    ['Customer Impact', 'Customers unable to place orders on meridian.com checkout'],
+    ['Detection', 'Automatic — cross-signal anomaly correlation'],
+    ['Detected At', fmtTime(inc.detectedAt)],
+    ['Investigation', 'Cross-system correlation across logs, metrics, traces, Kubernetes, database, deployments and GitHub'],
+    ['Root Cause', 'Recent checkout-service deployment (v2.114.0) increased database connections per request, exhausting the PostgreSQL connection pool under production traffic.'],
+    ['Affected Services', 'Checkout API, Order Service, Payment Service, PostgreSQL'],
+    ['Remediation', 'Rolled back checkout-service to v2.113.2, drained unhealthy pods, verified connection pool recovery'],
+    ['Resolved At', fmtTime(inc.resolvedAt)],
+    ['Time to Resolution', fmtMs(durMs)],
+    ['Recovery Verification', state.orderConfirmed ? 'Verified — Order #4829137 confirmed at '+fmtTime(state.orderConfirmedAt) : 'Pending — retry checkout on the storefront to verify'],
+  ];
+  return `
+    ${sevTopline('Incident Report')}
+    <div class="panel">
+      <div class="panel-h"><h2>${inc.id} — Auto-generated Summary</h2></div>
+      ${rows.map(([k,v])=>`<div class="report-field"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-h"><h2>Evidence</h2></div>
+        <div class="evi-grid">${state.evidence.map(e=>`<div class="evi-card"><div class="k">${e.k}</div><div class="v">${e.v}</div><div class="s">${e.s}</div></div>`).join('')}</div>
+      </div>
+      <div class="panel"><div class="panel-h"><h2>Timeline</h2></div>${timelineHtml()}</div>
+    </div>
+  `;
+}
+
+function wireConsoleSection(sec){
+  const auth=$('#authBtn'); if(auth) auth.addEventListener('click', authorizeRemediation);
+  const quickAuth=$('#quickAuth'); if(quickAuth) quickAuth.addEventListener('click', authorizeRemediation);
+  const dep=$('#deployRollbackBtn'); if(dep) dep.addEventListener('click', ()=>{ state.rops.activeSection='remediation'; renderRopsShell(); });
+}
+
+/* ============================================================
+   ENV SWITCH / WIRING / INIT
+   ============================================================ */
+function switchEnv(env){
+  $$('.env').forEach(e=>e.classList.remove('active'));
+  $('#env-'+env).classList.add('active');
+  $$('.envbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-env')===env));
+}
+
+$('#envSwitch').addEventListener('click', e=>{
+  const b=e.target.closest('.envbtn'); if(!b) return;
+  switchEnv(b.getAttribute('data-env'));
+});
+$('#resetBtn').addEventListener('click', resetDemo);
+
+/* ============================================================
+   AUTOPLAY — simulated cursor drives the whole demo hands-free
+   ============================================================ */
+const cursorEl = $('#simCursor');
+const captionEl = $('#simCaption');
+const autoplay = { token:0, paused:false, running:false, timers:[] };
+
+function autoRawWait(ms){
+  return new Promise(res=>{ const id=setTimeout(res, ms); autoplay.timers.push(id); });
+}
+function clearAutoplayTimers(){ autoplay.timers.forEach(id=>clearTimeout(id)); autoplay.timers=[]; }
+
+function placeCursorAt(x,y){
+  cursorEl.style.left = x+'px'; cursorEl.style.top = y+'px';
+  captionEl.style.left = x+'px'; captionEl.style.top = y+'px';
+}
+function pulseClick(){
+  cursorEl.classList.remove('clicking'); void cursorEl.offsetWidth; cursorEl.classList.add('clicking');
+}
+function setPauseBtnUI(){
+  const b=$('#autoplayToggle');
+  if(!b) return;
+  b.textContent = autoplay.paused ? '▶ Resume Autoplay' : '⏸ Pause Autoplay';
+}
+
+function stopAutoplayScript(){
+  autoplay.token++;
+  autoplay.running=false;
+  autoplay.paused=false;
+  clearAutoplayTimers();
+  setPauseBtnUI();
+  cursorEl.classList.remove('show');
+  captionEl.classList.remove('show');
+}
+
+async function playScript(myToken){
+  const dead = ()=> myToken!==autoplay.token;
+  async function wait(ms){
+    let elapsed=0;
+    while(elapsed<ms){
+      if(dead()) return;
+      if(autoplay.paused){ await autoRawWait(150); continue; }
+      const chunk=Math.min(150, ms-elapsed);
+      await autoRawWait(chunk);
+      elapsed+=chunk;
+    }
+  }
+  async function waitForPhase(target, timeoutMs){
+    const start=Date.now();
+    const targetIdx=PHASES.indexOf(target);
+    while(PHASES.indexOf(state.phase)<targetIdx){
+      if(dead()) return false;
+      if(Date.now()-start>timeoutMs) return false;
+      await wait(200);
+    }
+    return true;
+  }
+  function caption(text){
+    captionEl.textContent=text;
+    captionEl.classList.add('show');
+  }
+  async function findEl(selector){
+    for(let i=0;i<20;i++){
+      const el=document.querySelector(selector);
+      if(el) return el;
+      if(dead()) return null;
+      await autoRawWait(100);
+    }
+    return document.querySelector(selector);
+  }
+  async function goto(selector){
+    const el=await findEl(selector);
+    if(!el || dead()) return null;
+    const r=el.getBoundingClientRect();
+    cursorEl.classList.add('show');
+    placeCursorAt(r.left+r.width/2, r.top+r.height/2);
+    captionEl.classList.add('show');
+    await wait(650);
+    return dead() ? null : el;
+  }
+  async function click(selector, cap){
+    if(cap) caption(cap);
+    const el=await goto(selector);
+    if(!el || dead()) return null;
+    await wait(180);
+    pulseClick();
+    el.click();
+    await wait(380);
+    return el;
+  }
+  async function typeInto(selector, text, cap){
+    if(cap) caption(cap);
+    const el=await goto(selector);
+    if(!el || dead()) return;
+    el.focus();
+    for(const ch of text){
+      if(dead()) return;
+      el.value += ch;
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      await autoRawWait(38);
+    }
+    await wait(400);
+  }
+
+  autoplay.running=true;
+  await wait(900);
+  if(dead()) return;
+
+  caption('Customer browsing meridian.com');
+  await wait(500);
+  await typeInto('#searchInput','jacket');
+  if(dead()) return;
+
+  await click('.mer-card','Opening product page');
+  if(dead()) return;
+  await click('[data-size="L"]','Selecting size');
+  await click('[data-color="Midnight"]','Selecting color');
+  await click('#addCartBtn','Adding to cart');
+  if(dead()) return;
+  await click('.mer-cart','Opening cart');
+  await click('#proceedCheckoutBtn','Proceeding to checkout');
+  if(dead()) return;
+  await wait(700);
+
+  await click('#placeOrderBtn','Customer clicks Place Order');
+  if(dead()) return;
+  await wait(900);
+  caption('Order failed — customer retries');
+  await click('#placeOrderBtn');
+  if(dead()) return;
+  await wait(900);
+
+  caption('Escalating to RemOpsAI…');
+  await click('[data-env="rops"]');
+  if(dead()) return;
+  await wait(600);
+
+  await goto('[data-sec="command"]');
+  caption('P1 incident detected automatically');
+  await wait(2200);
+  if(dead()) return;
+
+  await click('[data-sec="metrics"]','Error rate and latency spiking');
+  await wait(2400);
+  if(dead()) return;
+
+  await click('[data-sec="k8s"]','Checkout pods restarting');
+  await wait(2000);
+  if(dead()) return;
+
+  await click('[data-sec="logs"]','Application logs streaming errors');
+  await wait(2000);
+  if(dead()) return;
+
+  await click('[data-sec="servicemap"]','Tracing the dependency chain');
+  await wait(2600);
+  if(dead()) return;
+
+  await click('[data-sec="investigation"]','Correlating evidence across the stack');
+  const gotRoot = await waitForPhase('rootcause', 20000);
+  if(dead()) return;
+  if(gotRoot){ caption('Root cause identified'); await wait(1600); }
+  await waitForPhase('remediation_ready', 15000);
+  if(dead()) return;
+
+  await click('[data-sec="remediation"]','Reviewing remediation plan');
+  await wait(1200);
+  if(dead()) return;
+  await click('#authBtn','Authorizing remediation');
+  if(dead()) return;
+
+  await goto('[data-sec="command"]');
+  caption('Rolling back deployment, restoring connections…');
+  await waitForPhase('resolved', 20000);
+  if(dead()) return;
+  await wait(1000);
+
+  caption('Verifying the customer can now order');
+  await click('[data-env="store"]');
+  if(dead()) return;
+  await wait(500);
+  await click('#placeOrderBtn','Retrying the same order');
+  if(dead()) return;
+  await wait(1400);
+  caption('Order confirmed');
+  await wait(1400);
+
+  await click('[data-env="rops"]');
+  await click('[data-sec="report"]','Auto-generated incident report');
+  if(dead()) return;
+  await wait(3200);
+
+  caption('Demo complete — press Replay to run again');
+  await wait(2200);
+  captionEl.classList.remove('show');
+  cursorEl.classList.remove('show');
+  autoplay.running=false;
+}
+
+function launchAutoplay(){
+  clearAutoplayTimers();
+  autoplay.token++;
+  autoplay.paused=false;
+  setPauseBtnUI();
+  playScript(autoplay.token);
+}
+
+$('#autoplayToggle').addEventListener('click', ()=>{
+  if(!autoplay.running) return;
+  autoplay.paused=!autoplay.paused;
+  setPauseBtnUI();
+});
+$('#replayBtn').addEventListener('click', ()=>{
+  stopAutoplayScript();
+  resetDemo();
+  autoRawWait(400).then(launchAutoplay);
+});
+
+store.lastOrderItems=[];
+renderStore();
+renderActiveConsole();
+updateStatusPill();
+updateTriggerBtn();
+
+state.heartbeat = setInterval(heartbeatTick, 700);
+setInterval(ambientTick, 3600);
+
+launchAutoplay();
+
+})();
+</script>
+</body>
+</html>
