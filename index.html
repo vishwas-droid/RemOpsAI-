@@ -1796,15 +1796,15 @@ function setCC(on){
 /* ---- What Happened (plain English) ---- */
 const EXPLAIN=[
   ['A customer could not buy anything.',
-   'They tried to check out, it failed, they tried again, it failed again. That is where this starts — everything below traces back to that one order.'],
+   'They tried to check out, it failed, they tried again, it failed again. That is where this starts. Everything below traces back to that one order.'],
   ['A code change 8 minutes earlier caused it.',
    'It used to take <b>one database connection per order</b>. Now it takes <b>one per item in the cart</b>. So a five-item cart uses five connections instead of one.'],
   ['The database ran out of connections.',
    'It only allows <b>120 at a time</b>. Checkout alone ate up 93 of them and everything filled up. Every new order now sits waiting about <b>four seconds</b> for a free connection, then gives up. That is the error the customer saw.'],
-  ['Two things look broken but are not.',
-   'Payment looks like it is failing — it is just stuck in the queue behind checkout. The crashing containers are the same story: restart them and they come back running the same bad code. <b>Both are symptoms, not the problem.</b>'],
-  ['So the fix is undoing the deploy, not restarting things.',
-   'RemOps spotted three things going wrong <b>at the same moment</b>, then matched that timing to the deploy that had just gone out. It prepares the rollback — and stops to ask a human before touching production.'],
+  ['Payment and the crashing containers are dead ends.',
+   'Payment is not actually broken. It is waiting behind checkout, which is waiting on the database. Restarting the containers will not get you anywhere either, because the replacements come back running the same bad code.'],
+  ['The fix is to undo the deploy.',
+   'RemOps spotted three things going wrong <b>at the same moment</b>, then matched that timing to the deploy that had just gone out. It prepares the rollback, then stops to ask a human before touching production.'],
 ];
 function sectionExplain(){
   if(state.phase==='normal'){
