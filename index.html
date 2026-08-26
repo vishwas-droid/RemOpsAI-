@@ -253,201 +253,555 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ============================================================
-   REMOPSAI CONSOLE
+   REMOPSAI CONSOLE — "PHOSPHOR FLIGHT DECK"
+   A flight-ops / annunciator board, not a SaaS dashboard.
+   Rules not cards. Amber phosphor. Tabular numerals. No blur.
    ============================================================ */
-#env-rops{background:var(--rops-bg);color:var(--rops-text)}
-.rops-shell{display:flex;min-height:calc(100vh - 49px)}
+#env-rops{
+  --deck-void:#08090b;
+  --deck-plate:#0d0e11;
+  --deck-plate2:#101116;
+  --deck-rule:#1e2027;
+  --deck-rule2:#2b2e38;
+  --amber:#f2a115;
+  --amber-lit:#ffc75c;
+  --amber-dim:rgba(242,161,21,.13);
+  --red:#ff3b30;
+  --red-dim:rgba(255,59,48,.13);
+  --mint:#2fe08a;
+  --mint-dim:rgba(47,224,138,.12);
+  --ice:#63b3ff;
+  --ice-dim:rgba(99,179,255,.12);
+  --txt:#e6e7ea;
+  --txt-2:#9ba0ac;
+  --txt-3:#5d626e;
+  --deck-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--deck-void);
+  color:var(--txt);
+  font-feature-settings:"tnum" 1,"zero" 1;
+  position:relative;
+}
+/* CRT scanlines — the one texture, kept near-invisible */
+#env-rops::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
+}
+#env-rops *{border-radius:0}
+
+/* ---------- Shell ---------- */
+.rops-shell{display:flex;min-height:calc(100vh - 49px);align-items:stretch}
+
+/* ---------- Index rail (sidebar) ---------- */
 .rops-side{
-  width:216px;flex:none;background:var(--rops-surface);border-right:1px solid var(--rops-border-soft);
-  padding:18px 12px;display:flex;flex-direction:column;gap:2px;
+  width:206px;flex:none;padding:0;gap:0;
+  background:var(--deck-plate);
+  border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;
 }
-.rops-brand{display:flex;align-items:center;gap:9px;padding:4px 8px 18px}
-.rops-mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent-2));flex:none;position:relative}
-.rops-mark svg{position:absolute;inset:0}
-.rops-brand b{font-size:14px;letter-spacing:-.01em}
-.rops-brand span{color:var(--accent-2)}
-.navsec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--rops-faint);text-transform:uppercase;padding:14px 10px 6px}
+.rops-brand{
+  display:flex;align-items:center;gap:9px;
+  padding:13px 14px;border-bottom:1px solid var(--deck-rule);
+}
+.rops-mark{
+  width:24px;height:24px;flex:none;background:var(--amber);position:relative;
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+}
+.rops-mark svg path{stroke:#0b0906 !important}
+.rops-brand b{font:800 13px var(--deck-mono);letter-spacing:.02em;color:var(--txt)}
+.rops-brand b span{color:var(--amber)}
+.rops-brand .sub{
+  display:block;font:500 8px var(--deck-mono);letter-spacing:.24em;
+  color:var(--txt-3);text-transform:uppercase;margin-top:3px;
+}
+.navsec{
+  font:600 8.5px var(--deck-mono);letter-spacing:.22em;color:var(--txt-3);
+  text-transform:uppercase;padding:15px 14px 7px;
+  display:flex;align-items:center;gap:8px;
+}
+.navsec::after{content:"";flex:1;height:1px;background:var(--deck-rule)}
 .navitem{
-  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:600;
-  color:var(--rops-dim);border:none;background:none;width:100%;text-align:left;position:relative;
+  position:relative;width:100%;display:grid;
+  grid-template-columns:20px 15px 1fr auto;align-items:center;gap:9px;
+  padding:6px 14px;background:none;border:none;cursor:pointer;
+  font:500 11.5px var(--deck-mono);letter-spacing:-.01em;
+  color:var(--txt-2);text-align:left;
+  transition:color .12s linear,background .12s linear;
 }
-.navitem svg{flex:none;opacity:.85}
-.navitem:hover{background:var(--rops-surface2);color:var(--rops-text)}
-.navitem.active{background:var(--accent-soft);color:#cfe0ff}
+.navitem::before{
+  content:attr(data-idx);
+  font:600 9px var(--deck-mono);color:var(--txt-3);letter-spacing:.02em;
+}
+.navitem svg{opacity:.55;width:14px;height:14px}
+.navitem:hover:not(:disabled){background:#15161b;color:var(--txt)}
+.navitem.active{background:var(--amber-dim);color:var(--amber-lit)}
+.navitem.active::before{color:var(--amber)}
+.navitem.active svg{opacity:1}
+.navitem.active::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--amber);
+}
+.navitem:disabled{opacity:.32;cursor:default}
 .navitem .nbadge{
-  margin-left:auto;background:var(--danger);color:#fff;font:700 9.5px var(--mono);padding:1px 6px;border-radius:20px;
+  font:700 8px var(--deck-mono);letter-spacing:.08em;padding:2px 5px;
+  background:var(--red);color:#150202;
 }
-.navitem .nbadge.ok{background:var(--ok)}
-.navitem:disabled{opacity:.4}
+.navitem .nbadge:not(.ok){animation:lampBlink 1.1s steps(1,end) infinite}
+.navitem .nbadge.ok{background:var(--mint);color:#052414}
+@keyframes lampBlink{0%,49%{opacity:1}50%,100%{opacity:.22}}
 
-.rops-main{flex:1;min-width:0;padding:22px 28px 60px;overflow-x:hidden}
-.rops-topline{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.rops-topline h1{font-size:19px;margin:0;letter-spacing:-.01em}
-.sev-badge{font:800 10.5px var(--mono);letter-spacing:.04em;padding:4px 9px;border-radius:6px;background:var(--danger-soft);color:var(--danger);border:1px solid rgba(240,71,90,.35)}
-.rops-topline .meta{font-size:12px;color:var(--rops-faint);font-family:var(--mono)}
+.rops-sidefoot{margin-top:auto;border-top:1px solid var(--deck-rule);padding:11px 14px 13px}
+.sfrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2.5px 0;font:500 9.5px var(--deck-mono)}
+.sfrow .k{color:var(--txt-3);letter-spacing:.1em;text-transform:uppercase}
+.sfrow .v{color:var(--txt-2)}
+.sfrow .v.lit{color:var(--mint)}
 
-.panel{background:var(--rops-surface);border:1px solid var(--rops-border-soft);border-radius:14px;padding:18px 20px;margin-bottom:16px}
-.panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
-.panel-h h2{font-size:13px;margin:0;font-weight:700;letter-spacing:.01em}
-.panel-h .sub{font-size:11.5px;color:var(--rops-faint)}
+/* ---------- Main ---------- */
+.rops-main{flex:1;min-width:0;padding:0 0 70px;overflow-x:hidden}
 
-.banner{
-  border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;border:1px solid;
+/* ---------- Annunciator header strip ---------- */
+.deck-strip{
+  display:flex;align-items:stretch;border-bottom:1px solid var(--deck-rule);
+  background:var(--deck-plate);
 }
-.banner.b-idle{background:var(--ok-soft);border-color:rgba(34,199,122,.3)}
-.banner.b-bad{background:var(--danger-soft);border-color:rgba(240,71,90,.35)}
-.banner.b-warn{background:var(--warn-soft);border-color:rgba(245,166,35,.35)}
-.banner.b-info{background:var(--accent-soft);border-color:rgba(76,141,255,.35)}
-.banner.b-ok{background:var(--ok-soft);border-color:rgba(34,199,122,.35)}
-.banner h3{margin:0 0 3px;font-size:14.5px}
-.banner p{margin:0;font-size:12.5px;color:var(--rops-dim);line-height:1.5}
-.banner .bicon{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.deck-strip .cell{
+  padding:10px 18px;border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;gap:4px;justify-content:center;min-width:0;
+}
+.deck-strip .cell .k{font:600 8.5px var(--deck-mono);letter-spacing:.2em;color:var(--txt-3);text-transform:uppercase}
+.deck-strip .cell .v{font:700 14px var(--deck-mono);color:var(--txt);letter-spacing:-.01em;white-space:nowrap}
+.deck-strip .cell.title{flex:1;border-right:1px solid var(--deck-rule)}
+.deck-strip .cell.title .v{font-size:17px;letter-spacing:-.02em}
+.deck-strip .cell .v.red{color:var(--red)}
+.deck-strip .cell .v.amber{color:var(--amber-lit)}
+.deck-strip .cell .v.mint{color:var(--mint)}
+.deck-strip .cell.clock .v{font-size:20px;font-weight:800}
+.deck-strip .cell:last-child{border-right:none}
+.deck-state{
+  display:flex;align-items:center;gap:8px;padding:0 20px;flex:none;
+  border-right:1px solid var(--deck-rule);
+}
+.deck-lamp{width:9px;height:9px;flex:none;background:var(--txt-3)}
+.deck-lamp.red{background:var(--red);box-shadow:0 0 9px 0 rgba(255,59,48,.7);animation:lampBlink 1.1s steps(1,end) infinite}
+.deck-lamp.amber{background:var(--amber);box-shadow:0 0 9px 0 rgba(242,161,21,.65)}
+.deck-lamp.mint{background:var(--mint);box-shadow:0 0 9px 0 rgba(47,224,138,.55)}
+.deck-state .lbl{font:700 10px var(--deck-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--txt-2);white-space:nowrap}
+.deck-state.red .lbl{color:var(--red)}
+.deck-state.amber .lbl{color:var(--amber-lit)}
+.deck-state.mint .lbl{color:var(--mint)}
 
-.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
-@media (max-width:1100px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
-.kpi{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:13px 14px}
-.kpi .lbl{font-size:10.5px;color:var(--rops-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:7px}
-.kpi .val{font:700 19px/1 var(--mono);font-variant-numeric:tabular-nums}
-.kpi .val.bad{color:var(--danger)}
-.kpi .val.ok{color:var(--ok)}
-.kpi .val.warn{color:var(--warn)}
-.kpi svg.spark{margin-top:8px;width:100%;height:24px;display:block}
+/* ---------- Section body / topline ---------- */
+.deck-body{padding:20px 22px 0}
+.rops-topline{display:none}
 
+/* ---------- Panels: rules, not cards ---------- */
+.panel{
+  background:var(--deck-plate);
+  border:1px solid var(--deck-rule);
+  border-radius:0;padding:0;margin-bottom:16px;
+}
+.panel-h{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin:0;padding:9px 14px;border-bottom:1px solid var(--deck-rule);
+  background:var(--deck-plate2);
+}
+.panel-h h2{
+  margin:0;font:700 9.5px var(--deck-mono);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--txt-2);display:flex;align-items:center;gap:9px;
+}
+.panel-h h2::before{
+  content:attr(data-n);color:var(--amber);font-weight:700;letter-spacing:.06em;
+}
+.panel-h .sub{font:500 9.5px var(--deck-mono);letter-spacing:.06em;color:var(--txt-3)}
+.panel > *:not(.panel-h){padding-left:14px;padding-right:14px}
+.panel > *:not(.panel-h):first-child{padding-top:12px}
+.panel > *:last-child{padding-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+@media (max-width:980px){.grid2{grid-template-columns:1fr}}
 
-/* service map */
-.svcmap{width:100%;height:auto;display:block}
-.svcnode-label{font:700 11px var(--sans);fill:var(--rops-text)}
-.svcnode-sub{font:600 9px var(--mono);letter-spacing:.02em}
+/* ---------- Callout (replaces banner) ---------- */
+.banner{
+  display:flex;gap:0;align-items:stretch;padding:0;margin-bottom:16px;
+  border:1px solid var(--deck-rule);background:var(--deck-plate);position:relative;
+}
+.banner .bicon{
+  flex:none;width:52px;display:flex;align-items:center;justify-content:center;
+  font:800 20px var(--deck-mono);border-right:1px solid var(--deck-rule);
+  background:var(--deck-plate2);
+}
+.banner .btext{padding:13px 16px;flex:1;min-width:0}
+.banner h3{
+  margin:0 0 5px;font:700 12px var(--deck-mono);letter-spacing:.14em;text-transform:uppercase;
+}
+.banner p{margin:0;font:400 12.5px var(--sans);color:var(--txt-2);line-height:1.6;max-width:82ch}
+.banner.b-bad{border-color:rgba(255,59,48,.42);background:linear-gradient(90deg,var(--red-dim),transparent 42%)}
+.banner.b-bad .bicon{color:var(--red);background:rgba(255,59,48,.10);border-right-color:rgba(255,59,48,.42)}
+.banner.b-bad h3{color:var(--red)}
+.banner.b-warn{border-color:rgba(242,161,21,.42);background:linear-gradient(90deg,var(--amber-dim),transparent 42%)}
+.banner.b-warn .bicon{color:var(--amber-lit);background:rgba(242,161,21,.10);border-right-color:rgba(242,161,21,.42)}
+.banner.b-warn h3{color:var(--amber-lit)}
+.banner.b-info{border-color:rgba(99,179,255,.4);background:linear-gradient(90deg,var(--ice-dim),transparent 42%)}
+.banner.b-info .bicon{color:var(--ice);background:rgba(99,179,255,.09);border-right-color:rgba(99,179,255,.4)}
+.banner.b-info h3{color:var(--ice)}
+.banner.b-ok,.banner.b-idle{border-color:rgba(47,224,138,.4);background:linear-gradient(90deg,var(--mint-dim),transparent 42%)}
+.banner.b-ok .bicon,.banner.b-idle .bicon{color:var(--mint);background:rgba(47,224,138,.09);border-right-color:rgba(47,224,138,.4)}
+.banner.b-ok h3,.banner.b-idle h3{color:var(--mint)}
+.banner-facts{display:flex;flex-wrap:wrap;gap:0;margin-top:11px;border-top:1px solid var(--deck-rule)}
+.bfact{padding:7px 16px 0 0;margin-right:16px;min-width:104px}
+.bfact .k{font:600 8.5px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3)}
+.bfact .v{font:700 11.5px var(--deck-mono);color:var(--txt);margin-top:3px}
 
-/* logs */
+/* ---------- Phase ladder ---------- */
+.ladder{display:flex;align-items:stretch;border:1px solid var(--deck-rule);background:var(--deck-plate);margin-bottom:16px}
+.lstep{
+  flex:1;min-width:0;padding:9px 13px;border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;
+}
+.lstep:last-child{border-right:none}
+.lstep .lidx{font:600 8.5px var(--deck-mono);letter-spacing:.2em;color:var(--txt-3)}
+.lstep .lname{font:700 11px var(--deck-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--txt-3);white-space:nowrap}
+.lstep .lbar{height:2px;background:var(--deck-rule2);margin-top:2px}
+.lstep.done .lname{color:var(--mint)}
+.lstep.done .lbar{background:var(--mint)}
+.lstep.done .lidx{color:var(--mint)}
+.lstep.active{background:var(--amber-dim)}
+.lstep.active .lname{color:var(--amber-lit)}
+.lstep.active .lidx{color:var(--amber)}
+.lstep.active .lbar{background:var(--deck-rule2);position:relative;overflow:hidden}
+.lstep.active .lbar::after{
+  content:"";position:absolute;inset:0;background:var(--amber);
+  transform-origin:left;animation:barSweep 1.5s linear infinite;
+}
+@keyframes barSweep{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+
+/* ---------- Strip-chart wall (shared time axis) ---------- */
+.stripwall{position:relative;padding:0 !important}
+.strip{
+  display:grid;grid-template-columns:186px 1fr 92px;align-items:stretch;
+  border-bottom:1px solid var(--deck-rule);
+}
+.strip:last-child{border-bottom:none}
+.strip .sid{
+  padding:10px 14px;border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;
+}
+.strip .sid .nm{font:600 10px var(--deck-mono);letter-spacing:.13em;text-transform:uppercase;color:var(--txt-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .sid .th{font:500 9px var(--deck-mono);color:var(--txt-3);letter-spacing:.04em}
+.strip .plot{position:relative;min-width:0;background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.032) 0 1px,transparent 1px 44px);
+}
+.strip .plot svg{display:block;width:100%;height:52px}
+.strip .val{
+  padding:10px 14px;border-left:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:2px;
+}
+.strip .val .n{font:700 16px var(--deck-mono);letter-spacing:-.02em;line-height:1}
+.strip .val .d{font:600 9px var(--deck-mono);letter-spacing:.04em;color:var(--txt-3)}
+.strip.s-ok .val .n{color:var(--txt)}
+.strip.s-warn .val .n{color:var(--amber-lit)}
+.strip.s-bad .val .n{color:var(--red)}
+.strip.s-bad{background:linear-gradient(90deg,rgba(255,59,48,.055),transparent 55%)}
+.strip.s-bad .sid .nm{color:var(--red)}
+.strip .val .d.up{color:var(--red)}
+.strip .val .d.down{color:var(--mint)}
+.strip-thresh{stroke:var(--red);stroke-width:1;stroke-dasharray:3 3;opacity:.42;vector-effect:non-scaling-stroke}
+.strip-axis{
+  display:grid;grid-template-columns:186px 1fr 92px;
+  border-top:1px solid var(--deck-rule);background:var(--deck-plate2);
+}
+.strip-axis .lead{padding:5px 14px;border-right:1px solid var(--deck-rule);font:600 8.5px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3)}
+.strip-axis .ticks{display:flex;justify-content:space-between;padding:5px 6px;font:500 8.5px var(--deck-mono);color:var(--txt-3);letter-spacing:.06em}
+.strip-axis .tail{border-left:1px solid var(--deck-rule)}
+
+
+/* ---------- Metrics wall ---------- */
+.mwall{padding:0 !important}
+.mstrip{
+  display:grid;grid-template-columns:210px 1fr 300px;align-items:stretch;
+  border-bottom:1px solid var(--deck-rule);
+}
+.mstrip:last-child{border-bottom:none}
+.mhead{
+  padding:14px;border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;
+}
+.mname{font:600 11px var(--deck-mono);letter-spacing:.13em;text-transform:uppercase;color:var(--txt-2)}
+.mthresh{font:500 9px var(--deck-mono);letter-spacing:.05em;color:var(--txt-3)}
+.mplot{position:relative;min-width:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.032) 0 1px,transparent 1px 44px)}
+.mplot svg{display:block;width:100%;height:96px}
+.mstats{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-left:1px solid var(--deck-rule);
+}
+.ms{
+  padding:14px 10px;border-right:1px solid var(--deck-rule);
+  display:flex;flex-direction:column;justify-content:center;gap:5px;text-align:right;
+}
+.ms:last-child{border-right:none}
+.ms .k{font:600 8px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3)}
+.ms .v{font:700 12.5px var(--deck-mono);color:var(--txt-2);letter-spacing:-.01em}
+.mstrip.s-ok .v.now{color:var(--mint)}
+.mstrip.s-warn .v.now{color:var(--amber-lit)}
+.mstrip.s-bad .v.now{color:var(--red)}
+.mstrip.s-bad{background:linear-gradient(90deg,rgba(255,59,48,.05),transparent 60%)}
+.mstrip.s-bad .mname{color:var(--red)}
+@media (max-width:1200px){
+  .mstrip{grid-template-columns:1fr;}
+  .mhead,.mstats{border-right:none;border-left:none;border-bottom:1px solid var(--deck-rule)}
+}
+
+/* ---------- Annunciator matrix (fleet) ---------- */
+.annun{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:0 !important;border-top:0}
+@media (max-width:1240px){.annun{grid-template-columns:repeat(2,1fr)}}
+.ann{
+  position:relative;padding:12px 14px;border-right:1px solid var(--deck-rule);border-bottom:1px solid var(--deck-rule);
+  display:flex;align-items:center;gap:11px;min-width:0;
+}
+.annun .ann:nth-child(3n){border-right:none}
+@media (max-width:1240px){.annun .ann:nth-child(3n){border-right:1px solid var(--deck-rule)}.annun .ann:nth-child(2n){border-right:none}}
+.annun .ann:nth-last-child(-n+3){border-bottom:none}
+.ann .lamp{width:11px;height:11px;flex:none;background:var(--txt-3);position:relative}
+.ann .meta{min-width:0;flex:1;display:flex;flex-direction:column}
+
+.ann .code{display:block;font:700 11px var(--deck-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.ann .stat{display:block;font:600 8.5px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.ann .load{font:600 10px var(--deck-mono);color:var(--txt-3);flex:none;letter-spacing:.02em}
+.ann.ok .lamp{background:var(--mint);box-shadow:0 0 8px 0 rgba(47,224,138,.5)}
+.ann.ok .stat{color:var(--mint)}
+.ann.bad{background:rgba(255,59,48,.055)}
+.ann.bad .lamp{background:var(--red);box-shadow:0 0 10px 0 rgba(255,59,48,.75);animation:lampBlink 1.1s steps(1,end) infinite}
+.ann.bad .stat{color:var(--red)}
+.ann.bad .code{color:#ff8a83}
+.ann.bad .load{color:var(--red)}
+
+/* ---------- Ledger timeline ---------- */
+.ledger{padding:0 !important;max-height:322px;overflow-y:auto}
+.led{
+  display:grid;grid-template-columns:74px 12px 1fr;align-items:baseline;gap:0;
+  padding:7px 14px;border-bottom:1px solid var(--deck-rule);
+  font:400 12px var(--sans);
+}
+.led:last-child{border-bottom:none}
+.led .lt{font:600 10px var(--deck-mono);color:var(--txt-3);letter-spacing:.02em}
+.led .lm{font:600 10px var(--deck-mono);color:var(--amber)}
+.led .ld{color:var(--txt-2);line-height:1.5}
+.led:first-child{background:var(--amber-dim)}
+.led:first-child .ld{color:var(--txt)}
+.led:first-child .lm{color:var(--amber-lit)}
+.timeline-list{padding:0}
+.timeline-list::before{display:none}
+.tl-item{position:relative;padding:0}
+.tl-item::before{display:none}
+
+/* ---------- Data tables / rows across all sections ---------- */
+table.k8s{width:100%;border-collapse:collapse;font:500 11.5px var(--deck-mono)}
+table.k8s th{
+  text-align:left;padding:7px 10px;border-bottom:1px solid var(--deck-rule2);
+  font:600 8.5px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3);
+}
+table.k8s td{padding:7px 10px;border-bottom:1px solid var(--deck-rule);color:var(--txt-2)}
+table.k8s tr:last-child td{border-bottom:none}
+table.k8s td:first-child{color:var(--txt)}
+.pod-status{font:600 10px var(--deck-mono);letter-spacing:.12em;text-transform:uppercase}
+.pod-status .d{width:8px;height:8px;border-radius:0}
+.pod-status.run{color:var(--mint)}.pod-status.run .d{background:var(--mint)}
+.pod-status.restart{color:var(--amber-lit)}.pod-status.restart .d{background:var(--amber)}
+.pod-status.crash{color:var(--red)}.pod-status.crash .d{background:var(--red);animation:lampBlink 1.1s steps(1,end) infinite}
+
 .logbox{
-  background:#080b10;border:1px solid var(--rops-border-soft);border-radius:10px;padding:11px 4px 11px 0;
-  max-height:420px;overflow-y:auto;font:500 11.5px/1.65 var(--mono);
+  background:#060608;border:1px solid var(--deck-rule);font-family:var(--deck-mono);
+  font-size:11.5px;line-height:1.6;padding:6px 0;max-height:520px;overflow-y:auto;
 }
-.logline{padding:1px 14px;display:flex;gap:10px;white-space:pre-wrap;word-break:break-word}
-.logline .ts{color:var(--rops-faint);flex:none}
-.logline .lvl{flex:none;font-weight:800;width:42px}
-.logline.INFO .lvl{color:#6c9dfa}
-.logline.WARN .lvl{color:var(--warn)}
-.logline.ERROR .lvl{color:var(--danger)}
-.logline .svc{color:var(--accent-2);flex:none}
-.logline .msg{color:#c7cee0}
+.logline{
+  display:grid;grid-template-columns:66px 48px 132px 1fr;gap:12px;
+  padding:2.5px 14px;white-space:pre-wrap;word-break:break-word;
+}
+.logline .ts{color:var(--txt-3)}
+.logline .lvl{width:auto;letter-spacing:.1em;font-weight:700}
+.logline .svc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logline.INFO .lvl{color:var(--ice)}
+.logline.WARN .lvl{color:var(--amber)}
+.logline.ERROR .lvl{color:var(--red)}
+.logline.ERROR{background:rgba(255,59,48,.05)}
+.logline .svc{color:var(--amber-lit)}
+.logline .msg{color:var(--txt-2)}
 
-/* metrics charts */
-.chartcard{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:14px 16px}
-.chartcard .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.chartcard .top .t{font-size:11.5px;font-weight:700;color:var(--rops-dim)}
-.chartcard .top .v{font:700 18px var(--mono)}
-.chartcard svg{width:100%;height:64px;display:block}
-.gaugewrap{display:flex;align-items:center;gap:16px}
-.gaugewrap .num{font:700 22px var(--mono)}
-.gaugewrap .cap{font-size:11px;color:var(--rops-faint)}
+.trace-row{grid-template-columns:170px 1fr 78px;padding:9px 0;border-bottom:1px solid var(--deck-rule)}
+.trace-svc{font:600 10.5px var(--deck-mono);letter-spacing:.06em;color:var(--txt-2)}
+.trace-bar-track{height:14px;background:#111217;border:1px solid var(--deck-rule);border-radius:0}
+.trace-bar{border-radius:0;background:var(--ice)}
+.trace-bar.slow{background:repeating-linear-gradient(45deg,var(--red) 0 5px,#c22a21 5px 10px)}
+.trace-dur{font:700 10.5px var(--deck-mono);color:var(--txt-2)}
+.trace-dur.slow{color:var(--red)}
 
-/* traces */
-.trace-row{display:grid;grid-template-columns:150px 1fr 70px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rops-border-soft)}
-.trace-row:last-child{border:none}
-.trace-svc{font:600 11.5px var(--mono);color:var(--rops-dim)}
-.trace-bar-track{height:16px;background:#161d2c;border-radius:5px;position:relative;overflow:hidden}
-.trace-bar{height:100%;border-radius:5px;background:var(--accent);transition:width .5s ease, background .3s ease}
-.trace-bar.slow{background:var(--danger)}
-.trace-dur{font:700 11px var(--mono);text-align:right}
-.trace-dur.slow{color:var(--danger)}
+.pool-bar-track{height:26px;background:#111217;border:1px solid var(--deck-rule);border-radius:0;position:relative}
+.pool-bar{
+  border-radius:0;
+  background:repeating-linear-gradient(90deg,var(--mint) 0 7px,transparent 7px 10px);
+}
+.pool-bar.crit{background:repeating-linear-gradient(90deg,var(--red) 0 7px,transparent 7px 10px)}
+.gaugewrap .num{font:800 26px var(--deck-mono);letter-spacing:-.02em}
+.gaugewrap .cap{font:500 10px var(--deck-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3);line-height:1.7}
 
-/* k8s */
-table.k8s{width:100%;border-collapse:collapse;font-size:12px}
-table.k8s th{text-align:left;font:700 10.5px var(--mono);color:var(--rops-faint);text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;border-bottom:1px solid var(--rops-border-soft)}
-table.k8s td{padding:8px 10px;border-bottom:1px solid var(--rops-border-soft);font-family:var(--mono);color:var(--rops-dim)}
-.pod-status{display:inline-flex;align-items:center;gap:6px;font-weight:700}
-.pod-status .d{width:7px;height:7px;border-radius:50%}
-.pod-status.run{color:var(--ok)}
-.pod-status.run .d{background:var(--ok)}
-.pod-status.crash{color:var(--danger)}
-.pod-status.crash .d{background:var(--danger);animation:blinkd 1s infinite}
-.pod-status.restart{color:var(--warn)}
-.pod-status.restart .d{background:var(--warn)}
-@keyframes blinkd{50%{opacity:.25}}
+.dep-row{padding:12px 0;border-bottom:1px solid var(--deck-rule);gap:12px}
+.dep-dot{width:8px;height:8px;border-radius:0;background:var(--deck-rule2);margin-top:4px}
+.dep-row.flagged{background:linear-gradient(90deg,rgba(255,59,48,.055),transparent 50%)}
+.dep-row.flagged .dep-dot{background:var(--red);animation:lampBlink 1.1s steps(1,end) infinite}
+.dep-row .ver{font:700 12px var(--deck-mono);letter-spacing:.04em;color:var(--txt)}
+.dep-row .flag{font:700 8.5px var(--deck-mono);letter-spacing:.14em;background:var(--red);color:#150202;padding:2px 6px;border-radius:0}
+.dep-row .sub{font:400 11.5px var(--sans);color:var(--txt-3);margin-top:4px;line-height:1.5}
+.rollback-btn{
+  margin-top:9px;font:700 9.5px var(--deck-mono);letter-spacing:.16em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--amber);color:var(--amber-lit);padding:6px 12px;border-radius:0;cursor:pointer;
+}
+.rollback-btn:hover{background:var(--amber);color:#150e02}
 
-/* db */
-.pool-bar-track{height:22px;background:#161d2c;border-radius:8px;overflow:hidden;border:1px solid var(--rops-border-soft)}
-.pool-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .6s ease, background .4s ease}
-.pool-bar.crit{background:linear-gradient(90deg,#ff8a5a,var(--danger))}
+.gh-card{background:var(--deck-plate2);border:1px solid var(--deck-rule);border-radius:0;padding:13px 15px}
+.gh-card .title{font:600 12.5px var(--sans);color:var(--txt)}
+.gh-card .meta{font:500 10px var(--deck-mono);color:var(--txt-3);letter-spacing:.04em;margin:6px 0 10px}
+.gh-diff{font:700 10.5px var(--deck-mono);letter-spacing:.06em}
+.gh-diff .add{color:var(--mint)}.gh-diff .del{color:var(--red)}
 
-/* deployments / github */
-.dep-row{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--rops-border-soft)}
-.dep-row:last-child{border:none}
-.dep-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--rops-border)}
-.dep-row.flagged .dep-dot{background:var(--danger)}
-.dep-row .body{flex:1;min-width:0}
-.dep-row .ver{font:700 12.5px var(--mono)}
-.dep-row .flag{font:700 9.5px var(--mono);background:var(--danger-soft);color:var(--danger);padding:2px 7px;border-radius:5px;margin-left:8px}
-.dep-row .sub{font-size:11.5px;color:var(--rops-faint);margin-top:2px}
-.rollback-btn{margin-top:8px;font:700 11px var(--sans);background:var(--rops-surface2);border:1px solid var(--rops-border);color:var(--rops-dim);padding:5px 10px;border-radius:7px}
+.sess-row{padding:9px 0;border-bottom:1px solid var(--deck-rule);font-family:var(--deck-mono);font-size:11px}
+.sess-row .sid{color:var(--amber);width:96px}
+.sess-row .txt{color:var(--txt-2);font-family:var(--sans);font-size:12px}
+.sess-row .badge{border-radius:0;font:700 8.5px var(--deck-mono);letter-spacing:.14em;padding:3px 7px}
+.sess-row .badge.fail{background:var(--red);color:#150202}
+.sess-row .badge.ok{background:var(--mint);color:#052414}
+.sess-row .ts{color:var(--txt-3);font-size:10px}
 
-.gh-card{border:1px solid var(--rops-border-soft);border-radius:10px;padding:14px 16px;background:var(--rops-surface2)}
-.gh-card .title{font:700 13px var(--sans);margin-bottom:6px}
-.gh-card .meta{font:500 11.5px var(--mono);color:var(--rops-faint);margin-bottom:10px}
-.gh-diff{font:600 11.5px var(--mono);display:flex;gap:14px}
-.gh-diff .add{color:var(--ok)}
-.gh-diff .del{color:var(--danger)}
+.checklist-item{padding:8px 0;border-bottom:1px solid var(--deck-rule);font:500 11.5px var(--deck-mono);letter-spacing:.04em;color:var(--txt-3)}
+.checklist-item:last-child{border-bottom:none}
+.checklist-item .ck{width:15px;height:15px;border-radius:0;border:1px solid var(--deck-rule2);background:transparent}
+.checklist-item.done{color:var(--txt)}
+.checklist-item.done .ck{background:var(--mint);border-color:var(--mint)}
 
-/* customer sessions */
-.sess-row{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rops-border-soft);font-size:12px}
-.sess-row .sid{font:700 11.5px var(--mono);color:var(--rops-dim);width:90px;flex:none}
-.sess-row .txt{flex:1;color:var(--rops-dim)}
-.sess-row .badge{font:700 9.5px var(--mono);padding:2px 8px;border-radius:20px;flex:none}
-.sess-row .badge.fail{background:var(--danger-soft);color:var(--danger)}
-.sess-row .badge.ok{background:var(--ok-soft);color:var(--ok)}
-.sess-row .ts{color:var(--rops-faint);font:500 11px var(--mono);flex:none}
+.evi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:0;padding:0 !important}
+.evi-card{
+  background:transparent;border:none;border-radius:0;padding:12px 14px;
+  border-right:1px solid var(--deck-rule);border-bottom:1px solid var(--deck-rule);
+}
+.evi-card:last-child{border-right:none}
+.evi-card .k{font:600 8.5px var(--deck-mono);letter-spacing:.18em;color:var(--txt-3)}
+.evi-card .v{font:700 13px var(--deck-mono);color:var(--amber-lit);margin:5px 0 4px;letter-spacing:-.01em}
+.evi-card .s{font:400 11px var(--sans);color:var(--txt-3);line-height:1.5}
 
-/* investigation */
-.checklist-item{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:var(--rops-faint)}
-.checklist-item .ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rops-border);flex:none;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s}
-.checklist-item.done{color:var(--rops-text)}
-.checklist-item.done .ck{background:var(--ok);border-color:var(--ok)}
-.checklist-item.done .ck svg{display:block}
-.checklist-item .ck svg{display:none;width:11px;height:11px}
-
-.timeline-list{position:relative;padding-left:18px}
-.timeline-list::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:1.5px;background:var(--rops-border)}
-.tl-item{position:relative;padding-bottom:16px;font-size:12.5px}
-.tl-item::before{content:"";position:absolute;left:-18px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--rops-surface)}
-.tl-item .t{font:700 11px var(--mono);color:var(--rops-faint)}
-.tl-item .d{color:var(--rops-text);margin-top:1px}
-
-.evi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-@media (max-width:1000px){.evi-grid{grid-template-columns:repeat(2,1fr)}}
-.evi-card{background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:12px;padding:14px}
-.evi-card .k{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--rops-faint);margin-bottom:6px}
-.evi-card .v{font:700 15px var(--mono);margin-bottom:4px}
-.evi-card .s{font-size:11px;color:var(--rops-dim);line-height:1.45}
-
-.confidence-wrap{display:flex;align-items:center;gap:16px;margin-top:14px}
-.conf-ring{position:relative;width:66px;height:66px;flex:none}
-.conf-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 15px var(--mono)}
-
-.remstep{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rops-border-soft)}
-.remstep:last-child{border:none}
-.remstep .n{width:22px;height:22px;border-radius:50%;background:var(--rops-surface2);border:1px solid var(--rops-border);display:flex;align-items:center;justify-content:center;font:700 11px var(--mono);flex:none;color:var(--rops-faint)}
-.remstep.active .n{border-color:var(--accent);color:var(--accent)}
-.remstep.done .n{background:var(--ok);border-color:var(--ok);color:#06251a}
-.remstep .txt{font-size:12.5px;color:var(--rops-dim);padding-top:1px}
-.remstep.done .txt{color:var(--rops-text)}
-.remstep .ts{margin-left:auto;font:600 10.5px var(--mono);color:var(--rops-faint);flex:none}
-
+.remstep{padding:11px 0;border-bottom:1px solid var(--deck-rule);gap:12px}
+.remstep .n{
+  width:20px;height:20px;border-radius:0;background:transparent;border:1px solid var(--deck-rule2);
+  font:700 9.5px var(--deck-mono);color:var(--txt-3);
+}
+.remstep.active .n{border-color:var(--amber);color:var(--amber)}
+.remstep.done .n{background:var(--mint);border-color:var(--mint);color:#052414}
+.remstep .txt{font:500 12px var(--deck-mono);letter-spacing:.02em;color:var(--txt-3)}
+.remstep.done .txt{color:var(--txt)}
+.remstep .ts{font:600 9.5px var(--deck-mono);color:var(--txt-3);letter-spacing:.04em}
 .authbtn{
-  width:100%;padding:13px;border-radius:10px;border:none;font-size:13.5px;font-weight:800;letter-spacing:.01em;
-  background:linear-gradient(180deg,#5b9bff,var(--accent));color:#fff;margin-top:4px;
+  width:100%;margin-top:14px;padding:14px;border:1px solid var(--amber);border-radius:0;
+  background:var(--amber);color:#150e02;
+  font:800 11px var(--deck-mono);letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+  transition:background .12s linear,color .12s linear;
 }
-.authbtn:disabled{background:var(--rops-surface2);color:var(--rops-faint);border:1px solid var(--rops-border)}
+.authbtn:not(:disabled):hover{background:var(--amber-lit);border-color:var(--amber-lit)}
+.authbtn:disabled{background:transparent;border-color:var(--deck-rule2);color:var(--txt-3);cursor:default}
 
-.report-field{display:grid;grid-template-columns:170px 1fr;gap:14px;padding:9px 0;border-bottom:1px solid var(--rops-border-soft);font-size:12.5px}
-.report-field .k{font-weight:700;color:var(--rops-faint);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em;padding-top:2px}
-.report-field .v{color:var(--rops-text);line-height:1.55}
+.report-field{grid-template-columns:180px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--deck-rule)}
+.report-field .k{font:600 8.5px var(--deck-mono);letter-spacing:.18em;color:var(--txt-3)}
+.report-field .v{font:400 12.5px var(--sans);color:var(--txt-2);line-height:1.6}
 
-.empty-console{padding:60px 20px;text-align:center;color:var(--rops-faint);font-size:13px;max-width:420px;margin:0 auto}
-.empty-console svg{margin-bottom:14px;opacity:.5}
+.empty-console{
+  padding:44px 20px;color:var(--txt-3);
+  font:500 10.5px var(--deck-mono);letter-spacing:.16em;text-transform:uppercase;
+}
+.chartcard{background:var(--deck-plate2);border:1px solid var(--deck-rule);border-radius:0;padding:12px 14px}
+.chartcard .top .t{font:600 9px var(--deck-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3)}
+.chartcard .top .v{font:700 17px var(--deck-mono);letter-spacing:-.02em}
+.conf-ring{display:none}
+
+
+.confmeter{display:flex;align-items:center;gap:11px;margin-top:5px}
+.cbar{display:flex;gap:2px}
+.cbar span{width:5px;height:16px;background:var(--deck-rule2)}
+.cbar span.on{background:var(--amber)}
+.cnum{font:800 15px var(--deck-mono);color:var(--amber-lit);letter-spacing:-.02em}
+.cnum small{font-size:10px;font-weight:600;margin-left:1px}
+
+/* ---------- Service map ---------- */
+.svcmap{width:100%;height:auto;display:block}
+.svcnode-label{font-family:var(--deck-mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;fill:var(--txt)}
+.svcnode-sub{font-family:var(--deck-mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase}
+.edge-live{animation:edgeFlow 1s linear infinite}
+@keyframes edgeFlow{to{stroke-dashoffset:-14}}
+
+
+
+/* ---------- Trace waterfall ---------- */
+.waterfall{padding:0 !important}
+.wrow{display:grid;grid-template-columns:270px 1fr 74px;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--deck-rule)}
+.wlab{display:flex;align-items:baseline;gap:8px;min-width:0}
+.wtick{width:8px;height:1px;background:var(--deck-rule2);flex:none;position:relative;top:-3px}
+.wsvc{font:600 10.5px var(--deck-mono);letter-spacing:.05em;color:var(--txt-2);white-space:nowrap}
+.wop{font:400 10px var(--deck-mono);color:var(--txt-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wtrack{position:relative;height:14px;background:#111217;border:1px solid var(--deck-rule)}
+.wbar{position:absolute;top:0;bottom:0;background:var(--ice);transition:left .4s ease,width .4s ease}
+.wrow.slow .wbar{background:repeating-linear-gradient(45deg,var(--red) 0 5px,#b8261e 5px 10px)}
+.wrow.slow .wsvc{color:var(--red)}
+.wdur{font:700 10.5px var(--deck-mono);text-align:right;color:var(--txt-2)}
+.wrow.slow .wdur{color:var(--red)}
+.waxis{display:grid;grid-template-columns:270px 1fr 74px;gap:12px;padding:6px 14px;background:var(--deck-plate2);border-top:1px solid var(--deck-rule)}
+.wticks{display:flex;justify-content:space-between;font:500 8.5px var(--deck-mono);letter-spacing:.06em;color:var(--txt-3)}
+@media (max-width:1000px){.wrow,.waxis{grid-template-columns:150px 1fr 62px}}
+
+/* ---------- Layout primitives shared by every section ---------- */
+.remstep{display:flex;align-items:flex-start;gap:12px}
+.remstep .n{flex:none;display:flex;align-items:center;justify-content:center}
+.remstep .txt{flex:1;min-width:0;padding-top:2px}
+.remstep .ts{margin-left:auto;flex:none;padding-top:3px}
+
+.checklist-item{display:flex;align-items:center;gap:11px}
+.checklist-item .ck{flex:none;display:flex;align-items:center;justify-content:center}
+.checklist-item .ck svg{display:none;width:10px;height:10px;stroke:#052414;stroke-width:3.5}
+.checklist-item.done .ck svg{display:block}
+
+.dep-row{display:flex;align-items:flex-start}
+.dep-row .body{flex:1;min-width:0}
+
+.sess-row{display:flex;align-items:center;gap:12px}
+.sess-row .sid{flex:none}
+.sess-row .txt{flex:1;min-width:0}
+.sess-row .badge,.sess-row .ts{flex:none}
+
+.trace-row{display:grid;align-items:center;gap:12px}
+.trace-bar-track{position:relative;overflow:hidden}
+.trace-bar{height:100%;transition:width .45s ease}
+.trace-dur{text-align:right}
+
+.pod-status{display:inline-flex;align-items:center;gap:7px}
+.pod-status .d{flex:none}
+
+.gaugewrap{display:flex;align-items:center;gap:18px}
+.pool-bar-track{overflow:hidden}
+.pool-bar{height:100%;transition:width .5s linear}
+
+.report-field{display:grid}
+.report-field .v{min-width:0}
+
+/* ---------- Scrollbars ---------- */
+.ledger::-webkit-scrollbar,.logbox::-webkit-scrollbar{width:9px}
+.ledger::-webkit-scrollbar-track,.logbox::-webkit-scrollbar-track{background:var(--deck-plate)}
+.ledger::-webkit-scrollbar-thumb,.logbox::-webkit-scrollbar-thumb{background:var(--deck-rule2)}
+
+@media (prefers-reduced-motion: reduce){
+  .deck-lamp.red,.ann.bad .lamp,.navitem .nbadge:not(.ok),
+  .pod-status.crash .d,.dep-row.flagged .dep-dot,.lstep.active .lbar::after,
+  .edge-live{animation:none}
+  .lstep.active .lbar::after{transform:scaleX(1)}
+}
+@media (max-width:1000px){
+  .rops-side{width:172px}
+  .deck-strip{flex-wrap:wrap}
+  .strip{grid-template-columns:130px 1fr 78px}
+  .strip-axis{grid-template-columns:130px 1fr 78px}
+}
 
 @media (prefers-reduced-motion: reduce){
   .mer-alert{animation:none}
@@ -763,7 +1117,7 @@ function heartbeatTick(){
     if(mm.hist.length>36) mm.hist.shift();
   });
 
-  if(state.rops.activeSection==='command') renderKpisLive();
+  renderKpisLive();
   if(state.rops.activeSection==='metrics') renderMetricsLive();
   if(state.rops.activeSection==='database') renderDbLive();
   updateStatusPillSpark();
@@ -1145,13 +1499,15 @@ function iconReport(){return `<svg width="15" height="15" viewBox="0 0 24 24" fi
 
 function renderRopsShell(){
   const groups=['Overview','Telemetry','Infrastructure'];
+  let idx=0;
   const nav = groups.map(g=>`
     <div class="navsec">${g}</div>
     ${NAV_ITEMS.filter(n=>n.group===g).map(n=>{
+      idx++;
       const disabled = n.sec==='report' && !(state.incident && state.incident.resolvedAt);
       const badge = n.sec==='command' && BROKEN_PHASES.has(state.phase) ? `<span class="nbadge">P1</span>` :
-                    n.sec==='report' && state.incident && state.incident.resolvedAt ? `<span class="nbadge ok">NEW</span>` : '';
-      return `<button class="navitem ${state.rops.activeSection===n.sec?'active':''}" data-sec="${n.sec}" ${disabled?'disabled':''}>${n.icon()}${n.label}${badge}</button>`;
+                    n.sec==='report' && state.incident && state.incident.resolvedAt ? `<span class="nbadge ok">RDY</span>` : '';
+      return `<button class="navitem ${state.rops.activeSection===n.sec?'active':''}" data-sec="${n.sec}" data-idx="${String(idx).padStart(2,'0')}" ${disabled?'disabled':''}>${n.icon()}<span>${n.label}</span>${badge}</button>`;
     }).join('')}
   `).join('');
 
@@ -1159,10 +1515,11 @@ function renderRopsShell(){
     <div class="rops-shell">
       <div class="rops-side">
         <div class="rops-brand">
-          <div class="rops-mark"><svg viewBox="0 0 26 26"><path d="M4 15l4-8 4 12 3-9 3 6 4-9" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <b>RemOps<span>AI</span></b>
+          <div class="rops-mark"><svg viewBox="0 0 26 26"><path d="M4 15l4-8 4 12 3-9 3 6 4-9" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><b>RemOps<span>AI</span></b><span class="sub">Autonomous SRE</span></div>
         </div>
         ${nav}
+        <div class="rops-sidefoot" id="deckFoot">${sideFootHtml()}</div>
       </div>
       <div class="rops-main" id="ropsMain"></div>
     </div>
@@ -1174,119 +1531,266 @@ function renderRopsShell(){
   }));
   renderConsoleSection();
 }
+function sideFootHtml(){
+  const crisis=BROKEN_PHASES.has(state.phase);
+  return `
+    <div class="sfrow"><span class="k">Open P1</span><span class="v ${crisis?'':'lit'}" style="${crisis?'color:var(--red)':''}">${crisis?'1':'0'}</span></div>
+    <div class="sfrow"><span class="k">Cluster</span><span class="v">meridian-prod</span></div>
+    <div class="sfrow"><span class="k">Region</span><span class="v">us-east-1</span></div>
+    <div class="sfrow"><span class="k">Feed</span><span class="v lit">LIVE</span></div>`;
+}
 function renderActiveConsole(){
   renderRopsShell();
 }
 
+const DECK_STATE={
+  normal:['mint','Nominal'], incident:['red','Anomaly'], detecting:['red','P1 Detected'],
+  investigating:['red','Investigating'], rootcause:['amber','Root Cause'],
+  remediation_ready:['amber','Awaiting Auth'], remediating:['amber','Remediating'], resolved:['mint','Resolved'],
+};
+function elapsedStr(){
+  const inc=state.incident;
+  if(!inc || !inc.detectedAt) return '--:--';
+  const end = inc.resolvedAt || now();
+  const secs=Math.max(0,Math.floor((end-inc.detectedAt)/1000));
+  return String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');
+}
 function sevTopline(title){
   const inc=state.incident;
-  return `<div class="rops-topline">
-    <h1>${title}</h1>
-    ${inc? `<span class="sev-badge">${inc.severity} · ${inc.id}</span>`:''}
-    ${inc? `<span class="meta">${inc.resolvedAt? 'Resolved '+fmtTime(inc.resolvedAt) : 'Detected '+(inc.detectedAt?fmtTime(inc.detectedAt):'—')}</span>`:''}
-  </div>`;
+  const [lamp,label]=DECK_STATE[state.phase]||['mint','Nominal'];
+  const errCls = state.metrics.errorRate.cur>10?'red':state.metrics.errorRate.cur>2?'amber':'mint';
+  return `<div class="deck-strip">
+    <div class="deck-state ${lamp}"><span class="deck-lamp ${lamp}"></span><span class="lbl">${label}</span></div>
+    <div class="cell title"><span class="k">Section</span><span class="v">${title}</span></div>
+    <div class="cell"><span class="k">Incident</span><span class="v ${inc?'red':''}">${inc?inc.id:'NONE'}</span></div>
+    <div class="cell"><span class="k">Severity</span><span class="v ${inc?'red':'mint'}">${inc?inc.severity:'—'}</span></div>
+    <div class="cell clock"><span class="k">${inc&&inc.resolvedAt?'Time to resolve':'Elapsed'}</span><span class="v ${inc&&!inc.resolvedAt?'red':'mint'}" data-deck-clock>${elapsedStr()}</span></div>
+    <div class="cell"><span class="k">Error rate</span><span class="v ${errCls}" data-deck-err>${state.metrics.errorRate.cur.toFixed(1)}%</span></div>
+  </div><!--DECKCUT-->`;
 }
-
 function renderConsoleSection(){
   const el=$('#ropsMain'); if(!el) return;
   const sec=state.rops.activeSection;
-  if(sec==='command') el.innerHTML = sectionCommand();
-  else if(sec==='servicemap') el.innerHTML = sectionServiceMap();
-  else if(sec==='investigation') el.innerHTML = sectionInvestigation();
-  else if(sec==='remediation') el.innerHTML = sectionRemediation();
-  else if(sec==='metrics') el.innerHTML = sectionMetrics();
-  else if(sec==='logs') el.innerHTML = sectionLogs();
-  else if(sec==='traces') el.innerHTML = sectionTraces();
-  else if(sec==='k8s') el.innerHTML = sectionK8s();
-  else if(sec==='database') el.innerHTML = sectionDatabase();
-  else if(sec==='deployments') el.innerHTML = sectionDeployments();
-  else if(sec==='github') el.innerHTML = sectionGithub();
-  else if(sec==='sessions') el.innerHTML = sectionSessions();
-  else if(sec==='report') el.innerHTML = sectionReport();
+  let html='';
+  if(sec==='command') html = sectionCommand();
+  else if(sec==='servicemap') html = sectionServiceMap();
+  else if(sec==='investigation') html = sectionInvestigation();
+  else if(sec==='remediation') html = sectionRemediation();
+  else if(sec==='metrics') html = sectionMetrics();
+  else if(sec==='logs') html = sectionLogs();
+  else if(sec==='traces') html = sectionTraces();
+  else if(sec==='k8s') html = sectionK8s();
+  else if(sec==='database') html = sectionDatabase();
+  else if(sec==='deployments') html = sectionDeployments();
+  else if(sec==='github') html = sectionGithub();
+  else if(sec==='sessions') html = sectionSessions();
+  else if(sec==='report') html = sectionReport();
+  // The annunciator strip sits flush at the top; everything below it gets body padding.
+  const cut = html.indexOf('<!--DECKCUT-->');
+  el.innerHTML = cut<0 ? html
+    : html.slice(0,cut) + '<div class="deck-body">' + html.slice(cut+14) + '</div>';
+  $$('.panel-h h2', el).forEach((h,i)=>h.setAttribute('data-n', String(i+1).padStart(2,'0')));
   wireConsoleSection(sec);
 }
 
 /* ---- Incident Command ---- */
+
+/* The incident as a flight plan: five checkpoints, left to right. */
+const LADDER=[
+  {k:'DETECT',   phases:['incident','detecting']},
+  {k:'ISOLATE',  phases:['investigating']},
+  {k:'DIAGNOSE', phases:['rootcause','remediation_ready']},
+  {k:'REPAIR',   phases:['remediating']},
+  {k:'VERIFY',   phases:['resolved']},
+];
+function ladderIndex(){
+  const p=state.phase;
+  if(p==='normal') return -1;
+  if(p==='resolved') return LADDER.length; // every checkpoint cleared
+  for(let i=0;i<LADDER.length;i++) if(LADDER[i].phases.includes(p)) return i;
+  return LADDER.length-1;
+}
+
+/* Every signal on one shared time axis, so the operator can see the
+   spike propagate across the stack in a single glance. */
+const STRIPS=[
+  {k:'errorRate', nm:'Checkout 5xx',   unit:'%',  thresh:10,   fmt:v=>v.toFixed(1)+'%'},
+  {k:'p95',       nm:'Checkout p95',   unit:'ms', thresh:1500, fmt:v=>v>=1000?(v/1000).toFixed(2)+'s':Math.round(v)+'ms'},
+  {k:'dbPool',    nm:'PG pool util',   unit:'%',  thresh:90,   fmt:v=>Math.round(v)+'%'},
+  {k:'payTimeout',nm:'Payment timeout',unit:'%',  thresh:10,   fmt:v=>v.toFixed(1)+'%'},
+  {k:'orders',    nm:'Orders / 5m',    unit:'',   thresh:null, fmt:v=>Math.round(v)},
+];
+
 function sectionCommand(){
   const p=state.phase;
   let banner;
-  if(p==='normal') banner = bannerHtml('b-idle','✓','All Systems Healthy','No active incidents. Checkout, payments, inventory, search and infrastructure are operating within normal thresholds.');
-  else if(p==='incident') banner = bannerHtml('b-bad','!','Checkout Failures Increasing','Elevated error rate detected on checkout-service. RemOps is correlating signals across services.');
-  else if(p==='detecting') banner = bannerHtml('b-bad','!','P1 INCIDENT DETECTED','Checkout failures increasing — customers are unable to complete orders. Automatic detection triggered.');
-  else if(p==='investigating') banner = bannerHtml('b-bad','↻','Investigation In Progress','RemOps is correlating logs, metrics, traces, Kubernetes, database and deployment signals across the stack.');
-  else if(p==='rootcause') banner = bannerHtml('b-warn','✓','Root Cause Identified','Recent checkout-service deployment increased database connections per request, exhausting the PostgreSQL connection pool.');
-  else if(p==='remediation_ready') banner = bannerHtml('b-warn','⏸','Awaiting Authorization','A remediation plan has been generated. Review it in Remediation and authorize execution.');
-  else if(p==='remediating') banner = bannerHtml('b-info','↻','Remediation In Progress','Rolling back checkout-service and restoring healthy connection pool levels.');
-  else banner = bannerHtml('b-ok','✓','Incident Resolved','checkout-service has been rolled back and verified healthy. Customer checkout is restored.');
+  if(p==='normal') banner = bannerHtml('b-idle','OK','All systems nominal','No active incidents. Checkout, payments, inventory, search and infrastructure are operating within normal thresholds.',
+    [['Services',"6 / 6 green"],['Autopilot','Armed'],['Last incident','none this window']]);
+  else if(p==='incident') banner = bannerHtml('b-bad','!','Anomaly on checkout-service','Error rate on the checkout path is climbing above baseline. RemOps is pulling correlated signals from across the stack.',
+    [['Trigger','5xx rate'],['Origin','checkout-service'],['Stage','Pre-triage']]);
+  else if(p==='detecting') banner = bannerHtml('b-bad','!','P1 declared — checkout down','Customers cannot complete orders on meridian.com. The incident was declared automatically by cross-signal anomaly correlation.',
+    [['Impact','Revenue path'],['Detection','Automatic'],['Blast radius','Checkout · Orders']]);
+  else if(p==='investigating') banner = bannerHtml('b-bad','~','Correlating six signal sources','RemOps is joining logs, metrics, traces, Kubernetes state, database counters and deploy history onto one incident timeline.',
+    [['Sources','6 attached'],['Method','Cross-signal join'],['Hypotheses','Narrowing']]);
+  else if(p==='rootcause') banner = bannerHtml('b-warn','=','Root cause isolated','checkout-service v2.114.0 opens a PostgreSQL connection per cart line item instead of reusing the pooled connection — exhausting the pool under production traffic.',
+    [['Culprit','deploy v2.114.0'],['Mechanism','Pool exhaustion'],['Confidence',state.confidence?state.confidence+'%':'computing']]);
+  else if(p==='remediation_ready') banner = bannerHtml('b-warn','?','Plan ready — awaiting your authorization','A six-step rollback plan has been generated and staged. RemOps will not touch production until a human authorizes it.',
+    [['Plan','6 steps'],['Action','Rollback → v2.113.2'],['Gate','Human approval']]);
+  else if(p==='remediating') banner = bannerHtml('b-info','>','Executing rollback','Reverting checkout-service to the last known healthy release and draining unhealthy pods while watching the pool recover.',
+    [['Executing','Rollback'],['Target','v2.113.2'],['Watching','Pool · p95 · 5xx']]);
+  else banner = bannerHtml('b-ok','OK','Incident closed','checkout-service is back on v2.113.2, the connection pool has drained to baseline, and a customer order has completed end to end.',
+    [['Outcome','Resolved'],['MTTR',elapsedStr()],['Report','Generated']]);
 
   return `
-    ${sevTopline('Incident Command Center')}
+    ${sevTopline('Incident Command')}
     ${banner}
-    <div class="kpi-row" id="kpiRow">${kpiRowHtml()}</div>
+    ${ladderHtml()}
+    <div class="panel">
+      <div class="panel-h"><h2>Signal Wall</h2><span class="sub">shared time axis · 0.7s resolution · dashed = alarm threshold</span></div>
+      <div class="stripwall" id="stripWall">${stripWallHtml()}</div>
+    </div>
     <div class="grid2">
       <div class="panel">
-        <div class="panel-h"><h2>Fleet Health</h2></div>
-        ${fleetHealthHtml()}
+        <div class="panel-h"><h2>Fleet Annunciator</h2><span class="sub">6 services</span></div>
+        <div class="annun">${annunHtml()}</div>
       </div>
       <div class="panel">
-        <div class="panel-h"><h2>Incident Timeline</h2><span class="sub">${state.timeline.length} events</span></div>
-        ${state.timeline.length ? timelineHtml() : `<div class="empty-console" style="padding:20px 10px">No active incident timeline.</div>`}
+        <div class="panel-h"><h2>Incident Ledger</h2><span class="sub">${state.timeline.length} entries</span></div>
+        ${state.timeline.length ? ledgerHtml() : `<div class="empty-console">No entries — no active incident</div>`}
       </div>
     </div>
-    ${p==='remediation_ready' ? `<div class="panel"><div class="panel-h"><h2>Quick Action</h2></div><button class="authbtn" id="quickAuth">Authorize Remediation</button></div>` : ''}
+    ${p==='remediation_ready' ? `<div class="panel"><div class="panel-h"><h2>Authorization Required</h2><span class="sub">production write</span></div><div style="padding-top:12px"><button class="authbtn" id="quickAuth">Authorize remediation</button></div></div>` : ''}
   `;
 }
-function bannerHtml(cls,glyph,title,body){
+
+function bannerHtml(cls,glyph,title,body,facts){
   return `<div class="banner ${cls}">
-    <div class="bicon" style="background:rgba(255,255,255,.08)">${glyph}</div>
-    <div><h3>${title}</h3><p>${body}</p></div>
+    <div class="bicon">${glyph}</div>
+    <div class="btext">
+      <h3>${title}</h3>
+      <p>${body}</p>
+      ${facts&&facts.length?`<div class="banner-facts">${facts.map(([k,v])=>`<div class="bfact"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}</div>`:''}
+    </div>
   </div>`;
-}
-function fleetHealthHtml(){
-  const broken=BROKEN_PHASES.has(state.phase);
-  const services=[
-    ['Checkout', broken],
-    ['Payments', state.phase==='incident'||state.phase==='detecting'||state.phase==='investigating'||state.phase==='rootcause'||state.phase==='remediation_ready'],
-    ['Inventory', false],
-    ['Search', false],
-    ['Orders', broken],
-    ['Infrastructure', state.phase==='investigating'||state.phase==='rootcause'||state.phase==='remediation_ready'],
-  ];
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    ${services.map(([name,bad])=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--rops-surface2);border:1px solid var(--rops-border-soft);border-radius:10px;padding:10px 12px">
-        <span style="font-size:12.5px;font-weight:600">${name}</span>
-        <span style="display:flex;align-items:center;gap:6px;font:700 11px var(--mono);color:${bad?'var(--danger)':'var(--ok)'}">
-          <span style="width:7px;height:7px;border-radius:50%;background:currentColor"></span>${bad?'Degraded':'Healthy'}
-        </span>
-      </div>`).join('')}
-  </div>`;
-}
-function timelineHtml(){
-  return `<div class="timeline-list">${state.timeline.map(e=>`<div class="tl-item"><div class="t">${e.t}</div><div class="d">${e.d}</div></div>`).join('')}</div>`;
 }
 
-function kpiRowHtml(){
-  const m=state.metrics;
-  const items=[
-    ['errorRate', m.errorRate.cur.toFixed(1)+'%', m.errorRate.cur>10?'bad':m.errorRate.cur>2?'warn':'ok'],
-    ['p95', (m.p95.cur/1000).toFixed(2)+'s', m.p95.cur>1500?'bad':m.p95.cur>500?'warn':'ok'],
-    ['dbPool', Math.round(m.dbPool.cur)+'%', m.dbPool.cur>90?'bad':m.dbPool.cur>65?'warn':'ok'],
-    ['payTimeout', m.payTimeout.cur.toFixed(1)+'%', m.payTimeout.cur>10?'bad':m.payTimeout.cur>2?'warn':'ok'],
-    ['pods', state.pods.filter(p=>p.status!=='run').length+' / '+state.pods.length, state.pods.some(p=>p.status!=='run')?'bad':'ok'],
-    ['orders', Math.round(m.orders.cur), 'ok'],
-  ];
-  const labels={errorRate:'Error Rate',p95:'P95 Latency',dbPool:'DB Pool',payTimeout:'Pay Timeout',pods:'Unhealthy Pods',orders:'Orders (5m)'};
-  return items.map(([k,v,cls])=>`
-    <div class="kpi" data-kpi="${k}">
-      <div class="lbl">${labels[k]}</div>
-      <div class="val ${cls}" data-val>${v}</div>
-      ${m[k] ? `<svg class="spark" data-spark viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${svgPoints(m[k].hist,100,24,m[k].min,m[k].max)}" fill="none" stroke="${cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)'}" stroke-width="2"/></svg>` : ''}
-    </div>`).join('');
+function ladderHtml(){
+  const cur=ladderIndex();
+  if(cur<0) return '';
+  return `<div class="ladder">${LADDER.map((st,i)=>`
+    <div class="lstep ${i<cur?'done':i===cur?'active':''}">
+      <div class="lidx">${String(i+1).padStart(2,'0')}${i<cur?' ✓':''}</div>
+      <div class="lname">${st.k}</div>
+      <div class="lbar"></div>
+    </div>`).join('')}</div>`;
 }
+
+/* Scale each strip to its own recent range (with headroom for the alarm
+   line) instead of a fixed 0..max — a flat baseline still shows its shape. */
+function stripDomain(m,cfg){
+  const h=m.hist.length?m.hist:[m.cur];
+  let hi=Math.max(...h, m.cur);
+  if(cfg.thresh!=null) hi=Math.max(hi, cfg.thresh*1.15);
+  let lo=Math.min(...h, m.cur);
+  const pad=(hi-lo)*0.28 || Math.max(hi*0.25, 1);
+  return {lo:Math.max(0,lo-pad), hi:hi+pad};
+}
+function stripSvg(m,cfg,H){
+  const W=400; H=H||52;
+  const dom=stripDomain(m,cfg);
+  const pts=svgPoints(m.hist,W,H,dom.lo,dom.hi);
+  if(!pts) return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"></svg>`;
+  const bad = cfg.thresh!=null && m.cur>=cfg.thresh;
+  const warn = cfg.thresh!=null && m.cur>=cfg.thresh*0.55;
+  const col = bad?'var(--red)':warn?'var(--amber)':'var(--mint)';
+  const tyRaw = cfg.thresh!=null ? H-((cfg.thresh-dom.lo)/((dom.hi-dom.lo)||1))*H : null;
+  const ty = (tyRaw!=null && tyRaw>=0 && tyRaw<=H) ? tyRaw.toFixed(1) : null;
+  const last=pts.split(' ').slice(-1)[0].split(',');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${ty!=null?`<line class="strip-thresh" x1="0" y1="${ty}" x2="${W}" y2="${ty}"/>`:''}
+    <polygon data-sfill points="0,${H} ${pts} ${W},${H}" fill="${col}" opacity=".10"/>
+    <polyline data-sline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    <line data-scursor x1="${last[0]}" y1="0" x2="${last[0]}" y2="${H}" stroke="${col}" stroke-width="1" opacity=".45" vector-effect="non-scaling-stroke"/>
+    <rect data-shead x="${(parseFloat(last[0])-1.6).toFixed(1)}" y="${(parseFloat(last[1])-1.6).toFixed(1)}" width="3.2" height="3.2" fill="${col}"/>
+  </svg>`;
+}
+function stripDelta(m){
+  if(m.hist.length<9) return '';
+  const a=m.hist[m.hist.length-9], b=m.hist[m.hist.length-1];
+  if(!a) return '';
+  const d=((b-a)/a)*100;
+  if(Math.abs(d)<2) return `<span class="d">flat</span>`;
+  const n=Math.abs(d)>=1000?'>999':Math.round(Math.abs(d));
+  return `<span class="d ${d>0?'up':'down'}">${d>0?'▲':'▼'} ${n}%</span>`;
+}
+function stripWallHtml(){
+  const m=state.metrics;
+  const rows = STRIPS.map(cfg=>{
+    const mm=m[cfg.k];
+    const bad = cfg.thresh!=null && mm.cur>=cfg.thresh;
+    const warn = cfg.thresh!=null && mm.cur>=cfg.thresh*0.55;
+    return `<div class="strip s-${bad?'bad':warn?'warn':'ok'}" data-strip="${cfg.k}">
+      <div class="sid">
+        <span class="nm">${cfg.nm}</span>
+        <span class="th">${cfg.thresh!=null?'alarm ≥ '+cfg.fmt(cfg.thresh):'no alarm'}</span>
+      </div>
+      <div class="plot">${stripSvg(mm,cfg)}</div>
+      <div class="val"><span class="n" data-sval>${cfg.fmt(mm.cur)}</span>${stripDelta(mm)}</div>
+    </div>`;
+  }).join('');
+  return rows + `<div class="strip-axis">
+    <div class="lead">Time</div>
+    <div class="ticks"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>now</span></div>
+    <div class="tail"></div>
+  </div>`;
+}
+function renderStripWallLive(){
+  const wall=$('#stripWall'); if(!wall) return;
+  wall.innerHTML = stripWallHtml();
+}
+
+/* Cockpit-style caution/warning panel: one lamp per service. */
+function annunHtml(){
+  const broken=BROKEN_PHASES.has(state.phase);
+  const mid=['incident','detecting','investigating','rootcause','remediation_ready'].includes(state.phase);
+  const infra=['investigating','rootcause','remediation_ready'].includes(state.phase);
+  const services=[
+    ['CHECKOUT', broken],
+    ['PAYMENTS', mid],
+    ['INVENTORY', false],
+    ['SEARCH', false],
+    ['ORDERS', broken],
+    ['INFRA', infra],
+  ];
+  return services.map(([name,bad])=>{
+    let h=0; const seed=name+state.phase;
+    for(let i=0;i<seed.length;i++) h=(h*31+seed.charCodeAt(i))>>>0;
+    const load = bad ? 82+(h%18) : 8+(h%34);
+    return `<div class="ann ${bad?'bad':'ok'}">
+      <span class="lamp"></span>
+      <span class="meta"><span class="code">${name}</span><span class="stat">${bad?'Degraded':'Nominal'}</span></span>
+      <span class="load">${String(load).padStart(2,'0')}%</span>
+    </div>`;
+  }).join('');
+}
+
+function ledgerHtml(){
+  return `<div class="ledger">${state.timeline.slice().reverse().map(e=>`
+    <div class="led"><span class="lt">${e.t}</span><span class="lm">›</span><span class="ld">${e.d}</span></div>`).join('')}</div>`;
+}
+/* Kept for the sections that still call it (investigation, report). */
+function timelineHtml(){ return ledgerHtml(); }
+
 function renderKpisLive(){
-  const row=$('#kpiRow'); if(!row) return;
-  row.innerHTML = kpiRowHtml();
+  renderStripWallLive();
+  const clk=$('[data-deck-clock]'); if(clk) clk.textContent=elapsedStr();
+  const err=$('[data-deck-err]');
+  if(err){
+    const v=state.metrics.errorRate.cur;
+    err.textContent=v.toFixed(1)+'%';
+    err.className='v '+(v>10?'red':v>2?'amber':'mint');
+  }
+  const foot=$('#deckFoot'); if(foot) foot.innerHTML=sideFootHtml();
 }
 
 /* ---- Service Map ---- */
@@ -1300,49 +1804,59 @@ function sectionServiceMap(){
   `;
 }
 const MAP_NODES=[
-  {id:'Customer Session', x:60, y:130, w:150},
-  {id:'Checkout API', x:270, y:60, w:130},
-  {id:'Order Service', x:460, y:130, w:130},
-  {id:'Payment Service', x:650, y:60, w:140},
-  {id:'PostgreSQL', x:460, y:220, w:120},
-  {id:'DB Connection Pool', x:650, y:220, w:160},
+  {id:'Customer Session', x:40, y:130, w:172},
+  {id:'Checkout API', x:262, y:60, w:158},
+  {id:'Order Service', x:470, y:130, w:158},
+  {id:'Payment Service', x:648, y:60, w:164},
+  {id:'PostgreSQL', x:470, y:220, w:158},
+  {id:'DB Connection Pool', x:648, y:220, w:164},
 ];
 const MAP_EDGES=[['Customer Session','Checkout API'],['Checkout API','Order Service'],['Order Service','Payment Service'],['Order Service','PostgreSQL'],['PostgreSQL','DB Connection Pool']];
 function nodeState(name){
   const traced=state.investigation.traced.includes(name);
   const broken = BROKEN_PHASES.has(state.phase);
   const badNodes=['Checkout API','Order Service','Payment Service','PostgreSQL','DB Connection Pool'];
-  if(!broken) return {color:'var(--ok)', label:'Healthy'};
-  if(state.phase==='remediating' || state.phase==='resolved') return {color:'var(--ok)', label:'Recovering'};
-  if(name==='DB Connection Pool' && (state.phase==='rootcause'||state.phase==='remediation_ready')) return {color:'var(--danger)', label:'Saturated — Root Cause'};
-  if(traced) return {color:'var(--warn)', label:badNodes.includes(name)?'Degraded':'Traced'};
-  if(badNodes.includes(name)) return {color:'var(--danger)', label:'Degraded'};
-  return {color:'var(--ok)', label:'Healthy'};
+  if(!broken) return {color:'var(--mint)', label:'Nominal'};
+  if(state.phase==='remediating' || state.phase==='resolved') return {color:'var(--mint)', label:'Recovering'};
+  if(name==='DB Connection Pool' && (state.phase==='rootcause'||state.phase==='remediation_ready')) return {color:'var(--red)', label:'Saturated · root cause'};
+  if(traced) return {color:'var(--amber)', label:badNodes.includes(name)?'Degraded':'Traced'};
+  if(badNodes.includes(name)) return {color:'var(--red)', label:'Degraded'};
+  return {color:'var(--mint)', label:'Nominal'};
 }
 function serviceMapSvg(){
-  const nx=n=>n.x, ny=n=>n.y;
   const edges=MAP_EDGES.map(([a,b])=>{
     const A=MAP_NODES.find(n=>n.id===a), B=MAP_NODES.find(n=>n.id===b);
     const traced = state.investigation.traced.includes(a) && state.investigation.traced.includes(b);
-    const x1=A.x+A.w, y1=A.y+18, x2=B.x, y2=B.y+18;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${traced?'var(--accent)':'#2a3450'}" stroke-width="${traced?2.5:1.5}" marker-end="url(#arrow)"/>`;
+    // Orthogonal routing reads like a real topology diagram, not a spline.
+    // Stacked nodes get a vertical drop; the rest get a right-angle elbow.
+    const overlap = A.x < B.x+B.w && B.x < A.x+A.w;
+    let d;
+    if(overlap){
+      const cx=Math.round(A.x+Math.min(A.w,B.w)/2);
+      d = B.y>A.y ? `M${cx},${A.y+40} V${B.y-7}` : `M${cx},${A.y} V${B.y+47}`;
+    } else {
+      const x1=A.x+A.w, y1=A.y+20, x2=B.x-7, y2=B.y+20;
+      const mx=Math.round(x1+(x2-x1)/2);
+      d = `M${x1},${y1} H${mx} V${y2} H${x2}`;
+    }
+    return `<path d="${d}" fill="none" stroke="${traced?'var(--amber)':'#2b2e38'}" stroke-width="${traced?1.6:1.2}"
+      ${traced?'stroke-dasharray="4 3" class="edge-live"':''} marker-end="url(#arrow)"/>`;
   }).join('');
   const nodes=MAP_NODES.map(n=>{
     const st=nodeState(n.id);
+    const bad = st.color==='var(--red)';
     return `<g>
-      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="36" rx="9" fill="var(--rops-surface2)" stroke="${st.color}" stroke-width="1.5"/>
-      <circle cx="${n.x+14}" cy="${n.y+18}" r="4" fill="${st.color}"/>
-      <text x="${n.x+24}" y="${n.y+16}" class="svcnode-label">${n.id}</text>
-      <text x="${n.x+24}" y="${n.y+28}" class="svcnode-sub" fill="${st.color}">${st.label}</text>
+      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="40" fill="${bad?'rgba(255,59,48,.07)':'var(--deck-plate2)'}" stroke="${st.color}" stroke-width="1"/>
+      <rect x="${n.x}" y="${n.y}" width="3" height="40" fill="${st.color}"/>
+      <text x="${n.x+13}" y="${n.y+17}" class="svcnode-label">${n.id.toUpperCase()}</text>
+      <text x="${n.x+13}" y="${n.y+30}" class="svcnode-sub" fill="${st.color}">${st.label}</text>
     </g>`;
   }).join('');
-  return `<svg class="svcmap" viewBox="0 0 820 280">
-    <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#3a4666"/></marker></defs>
+  return `<svg class="svcmap" viewBox="0 0 830 285">
+    <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#3f434f"/></marker></defs>
     ${edges}${nodes}
   </svg>`;
 }
-
-/* ---- Investigation ---- */
 function sectionInvestigation(){
   const conn=state.investigation.connected;
   return `
@@ -1375,9 +1889,9 @@ function sectionInvestigation(){
           <div style="flex:1">
             <h3>ROOT CAUSE IDENTIFIED</h3>
             <p>Recent checkout-service deployment increased database connections per request, exhausting the PostgreSQL connection pool under production traffic.</p>
-            <div class="confidence-wrap">
-              ${confRingSvg(state.confidence)}
-              <div><div style="font-size:11px;color:var(--rops-faint)">Confidence score</div><div style="font-size:11.5px;color:var(--rops-dim);max-width:360px">Based on ${state.evidence.length} correlated evidence sources across deployments, database and traces.</div></div>
+            <div class="banner-facts">
+              <div class="bfact" style="min-width:210px"><div class="k">Confidence</div>${confRingSvg(state.confidence)}</div>
+              <div class="bfact" style="flex:1;min-width:220px"><div class="k">Basis</div><div class="v" style="font:400 11.5px var(--sans);color:var(--txt-3);line-height:1.5;letter-spacing:0">${state.evidence.length} correlated evidence sources across deployments, database and traces.</div></div>
             </div>
           </div>
         </div>` : ''}
@@ -1385,12 +1899,11 @@ function sectionInvestigation(){
   `;
 }
 function confRingSvg(pct){
-  const r=27, c=2*Math.PI*r, off=c*(1-pct/100);
-  return `<svg class="conf-ring" viewBox="0 0 66 66">
-    <circle cx="33" cy="33" r="${r}" fill="none" stroke="#232c40" stroke-width="6"/>
-    <circle cx="33" cy="33" r="${r}" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round"
-      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 33 33)" style="transition:stroke-dashoffset .3s"/>
-  </svg><div class="num" style="position:relative;width:0;height:0"><span style="position:relative;left:-49px;top:-44px;font:700 14px var(--mono)">${pct}%</span></div>`;
+  const cells=20, lit=Math.round(cells*pct/100);
+  return `<div class="confmeter">
+    <div class="cbar">${Array.from({length:cells},(_,i)=>`<span class="${i<lit?'on':''}"></span>`).join('')}</div>
+    <div class="cnum">${pct}<small>%</small></div>
+  </div>`;
 }
 
 /* ---- Remediation ---- */
@@ -1426,44 +1939,41 @@ function sectionRemediation(){
 }
 
 /* ---- Metrics ---- */
-function metricChart(m, key, cls){
-  const color = cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)';
-  const val = key==='p95' ? (m.cur/1000).toFixed(2)+'s' : key==='orders' ? Math.round(m.cur) : m.cur.toFixed(1)+m.unit;
-  return `<div class="chartcard" data-mkey="${key}">
-    <div class="top"><span class="t">${m.label}</span><span class="v" data-mval>${val}</span></div>
-    <svg viewBox="0 0 200 64" preserveAspectRatio="none"><polyline data-mline points="${svgPoints(m.hist,200,64,m.min,m.max)}" fill="none" stroke="${color}" stroke-width="2.5"/></svg>
+/* Same strip language as the command wall, expanded: each signal keeps its
+   own row but gains a now / peak / floor readout to the right. */
+function metricStrip(cfg){
+  const m=state.metrics[cfg.k];
+  const hist=m.hist.length?m.hist:[m.cur];
+  const peak=Math.max(...hist), floor=Math.min(...hist);
+  const bad = cfg.thresh!=null && m.cur>=cfg.thresh;
+  const warn = cfg.thresh!=null && m.cur>=cfg.thresh*0.55;
+  return `<div class="mstrip s-${bad?'bad':warn?'warn':'ok'}" data-mkey="${cfg.k}">
+    <div class="mhead">
+      <span class="mname">${m.label}</span>
+      <span class="mthresh">${cfg.thresh!=null?'alarm ≥ '+cfg.fmt(cfg.thresh):'no alarm configured'}</span>
+    </div>
+    <div class="mplot">${stripSvg(m,cfg,96)}</div>
+    <div class="mstats">
+      <div class="ms"><span class="k">Now</span><span class="v now">${cfg.fmt(m.cur)}</span></div>
+      <div class="ms"><span class="k">Peak</span><span class="v">${cfg.fmt(peak)}</span></div>
+      <div class="ms"><span class="k">Floor</span><span class="v">${cfg.fmt(floor)}</span></div>
+      <div class="ms"><span class="k">Samples</span><span class="v">${hist.length}</span></div>
+    </div>
   </div>`;
 }
 function sectionMetrics(){
-  const m=state.metrics;
-  const clsOf = (k,v)=> k==='errorRate'? (v>10?'bad':v>2?'warn':'ok') : k==='p95'? (v>1500?'bad':v>500?'warn':'ok') : k==='dbPool'? (v>90?'bad':v>65?'warn':'ok') : k==='payTimeout'? (v>10?'bad':v>2?'warn':'ok') : 'ok';
   return `
     ${sevTopline('Metrics')}
     <div class="panel">
-      <div class="panel-h"><h2>Live Production Metrics</h2><span class="sub">refreshing every 0.7s · meridian-prod</span></div>
-      <div class="grid2" id="metricsGrid">
-        ${metricChart(m.errorRate,'errorRate',clsOf('errorRate',m.errorRate.cur))}
-        ${metricChart(m.p95,'p95',clsOf('p95',m.p95.cur))}
-        ${metricChart(m.dbPool,'dbPool',clsOf('dbPool',m.dbPool.cur))}
-        ${metricChart(m.payTimeout,'payTimeout',clsOf('payTimeout',m.payTimeout.cur))}
-      </div>
-      <div style="margin-top:12px">${metricChart(m.orders,'orders','ok')}</div>
+      <div class="panel-h"><h2>Live Production Metrics</h2><span class="sub">0.7s resolution · meridian-prod · dashed = alarm threshold</span></div>
+      <div class="mwall" id="metricsGrid">${STRIPS.map(metricStrip).join('')}</div>
     </div>
   `;
 }
+
 function renderMetricsLive(){
-  const grid=$('#ropsMain'); if(!grid || state.rops.activeSection!=='metrics') return;
-  const m=state.metrics;
-  const clsOf = (k,v)=> k==='errorRate'? (v>10?'bad':v>2?'warn':'ok') : k==='p95'? (v>1500?'bad':v>500?'warn':'ok') : k==='dbPool'? (v>90?'bad':v>65?'warn':'ok') : k==='payTimeout'? (v>10?'bad':v>2?'warn':'ok') : 'ok';
-  ['errorRate','p95','dbPool','payTimeout','orders'].forEach(k=>{
-    const card=$(`.chartcard[data-mkey="${k}"]`,grid); if(!card) return;
-    const mm=m[k]; const cls=clsOf(k,mm.cur);
-    const color = cls==='bad'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent-2)';
-    card.querySelector('[data-mval]').textContent = k==='p95' ? (mm.cur/1000).toFixed(2)+'s' : k==='orders' ? Math.round(mm.cur) : mm.cur.toFixed(1)+mm.unit;
-    const line=card.querySelector('[data-mline]');
-    line.setAttribute('points', svgPoints(mm.hist,200,64,mm.min,mm.max));
-    line.setAttribute('stroke', color);
-  });
+  const grid=$('#metricsGrid'); if(!grid || state.rops.activeSection!=='metrics') return;
+  grid.innerHTML = STRIPS.map(metricStrip).join('');
 }
 
 /* ---- Logs ---- */
@@ -1490,26 +2000,41 @@ function renderLogsAppend(e){
 function sectionTraces(){
   const broken=BROKEN_PHASES.has(state.phase) && state.phase!=='remediating';
   const recovering = state.phase==='remediating';
+  const pick=(bad,rec,ok)=> broken?bad:recovering?rec:ok;
+  // depth = nesting level, start = offset from trace origin (ms)
   const spans=[
-    ['checkout-service', broken?4800:recovering?1400:210],
-    ['order-service', broken?4200:recovering?1050:150],
-    ['payment-service', broken?1600:recovering?520:80],
-    ['db.connection.acquire', broken?3900:recovering?900:12],
+    {svc:'checkout-service',      op:'POST /v1/checkout/place-order', depth:0, start:0,                       dur:pick(4800,1400,210)},
+    {svc:'order-service',         op:'orders.create',                 depth:1, start:pick(90,50,18),          dur:pick(4200,1050,150)},
+    {svc:'db.connection.acquire', op:'pool.acquire',                  depth:2, start:pick(140,80,26),         dur:pick(3900,900,12)},
+    {svc:'payment-service',       op:'payments.authorize',            depth:2, start:pick(4100,980,52),       dur:pick(1600,520,80)},
   ];
-  const maxDur=Math.max(...spans.map(s=>s[1]),300);
+  const total=Math.max(...spans.map(s=>s.start+s.dur),300);
   return `
     ${sevTopline('Traces')}
     <div class="panel">
-      <div class="panel-h"><h2>Trace — POST /v1/checkout/place-order</h2><span class="sub">${broken?'trace_id 9c14ef2a · status: error':'trace_id 771ab30f · status: ok'}</span></div>
-      ${spans.map(([svc,dur])=>{
-        const pct=Math.max(3,(dur/maxDur)*100);
-        const slow = dur>1000;
-        return `<div class="trace-row">
-          <span class="trace-svc">${svc}</span>
-          <div class="trace-bar-track"><div class="trace-bar ${slow?'slow':''}" style="width:${pct}%"></div></div>
-          <span class="trace-dur ${slow?'slow':''}">${fmtMs(dur)}</span>
-        </div>`;
-      }).join('')}
+      <div class="panel-h"><h2>Trace — POST /v1/checkout/place-order</h2><span class="sub">${broken?'trace_id 9c14ef2a · status error':'trace_id 771ab30f · status ok'}</span></div>
+      <div class="waterfall">
+        ${spans.map(sp=>{
+          const slow = sp.dur>1000;
+          const left=(sp.start/total)*100, w=Math.max(0.6,(sp.dur/total)*100);
+          return `<div class="wrow ${slow?'slow':''}">
+            <div class="wlab" style="padding-left:${sp.depth*14}px">
+              ${sp.depth?'<span class="wtick"></span>':''}
+              <span class="wsvc">${sp.svc}</span>
+              <span class="wop">${sp.op}</span>
+            </div>
+            <div class="wtrack">
+              <div class="wbar" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%"></div>
+            </div>
+            <span class="wdur">${fmtMs(sp.dur)}</span>
+          </div>`;
+        }).join('')}
+        <div class="waxis">
+          <div></div>
+          <div class="wticks">${[0,.25,.5,.75,1].map(f=>`<span>${fmtMs(total*f)}</span>`).join('')}</div>
+          <div></div>
+        </div>
+      </div>
     </div>
   `;
 }
