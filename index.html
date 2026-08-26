@@ -1630,97 +1630,97 @@ const cc = { on:true };
 
 /* Storefront narration, keyed by store view. */
 const CC_STORE={
-  shop:['A customer is shopping on meridian.com — an ordinary session, nothing staged.',
-        'Everything RemOps is about to find starts from this one customer.'],
-  product:['Product page. Size and colour selected, item added to the cart.',
-           'Still healthy — checkout has not been called yet.'],
-  cart:['Cart review before checkout.',
-        'The order is about to hit checkout-service, which is running the bad release.'],
-  checkout:['Checkout. Clicking <b>Place Order</b> calls checkout-service and starts the incident.',
-            'The failure the customer sees is <b>HTTP 500 — checkout_failed</b>.'],
-  confirm:['Order confirmed after the rollback — the same cart that failed twice now goes through.',
-           'This is the verification that actually closes the incident.'],
+  shop:['Someone is shopping. Normal day, normal session.',
+        'Everything that follows starts right here.'],
+  product:['Picking a size and colour, adding it to the cart.',
+           'Still fine — checkout has not been called yet.'],
+  cart:['Checking the cart before paying.',
+        'This order is about to hit the service that is broken.'],
+  checkout:['Hitting <b>Place Order</b> is what kicks the whole thing off.',
+            'All the customer sees is: something went wrong.'],
+  confirm:['Same cart that failed twice. Goes through now.',
+           'This is the real proof it is fixed.'],
 };
 
-/* Console narration: what the page is, and its role in the causal chain. */
+/* Console narration: what the page is, and what it tells you. */
 const CC_SECTIONS={
   command:{
     n:'01 · Incident Command',
-    what:'The summary screen: status banner, phase ladder, signal wall, service lamps and the incident ledger.',
-    role:'Five signals share one time axis here, so the failure can be watched spreading across the stack instead of read off five separate graphs.'
+    what:'The main screen. Everything at a glance.',
+    role:'All five graphs share one timeline, so you can watch the problem spread.'
   },
   servicemap:{
     n:'02 · Service Map',
-    what:'The production dependency graph. RemOps lights each hop as it traces the call chain backwards from the failure.',
-    role:'Checkout, orders, payment and Postgres are all degraded — the map shows which one is <b>first</b>. The trace terminates at the DB connection pool.'
+    what:'How the services connect to each other.',
+    role:'Plenty of things are red. This shows which one went first — the trail ends at the DB pool.'
   },
   investigation:{
     n:'03 · Investigation',
-    what:'Eight signal sources attached, four pieces of evidence correlated, and a root cause stated with a confidence score.',
-    role:'The causal chain: new deployment → connection explosion → DB pool exhaustion → checkout failure → downstream payment degradation.'
+    what:'Where RemOps puts the pieces together.',
+    role:'Bad deploy → too many connections → pool ran dry → checkout died → payments backed up behind it.'
   },
   remediation:{
     n:'04 · Remediation',
-    what:'A six-step rollback plan to v2.113.2, the last known-good release, staged and ready.',
-    role:'RemOps has the diagnosis and the fix, and still will not touch production. It stops here for human approval.'
+    what:'The fix, ready to go. Roll back to <b>v2.113.2</b>.',
+    role:'It knows what broke and how to fix it. It still will not touch production until you say so.'
   },
   report:{
     n:'05 · Incident Report',
-    what:'Impact, detection method, timestamps, root cause, remediation, time to resolution and the verifying order number.',
-    role:'Not written afterwards — it is the record the investigation kept as it happened.'
+    what:'The write-up. Everything that happened, start to finish.',
+    role:'Nobody typed this. It is just what got recorded along the way.'
   },
   metrics:{
     n:'06 · Metrics',
-    what:'Each signal as a chart recorder with its alarm threshold and now / peak / floor readouts.',
-    role:'Confirms the pattern: <b>39% checkout errors</b>, <b>4.8s p95 latency</b>, and payment timeouts downstream — all bending at the same instant.'
+    what:'The numbers, up close.',
+    role:'<b>39%</b> of checkouts failing, pages taking <b>4.8s</b>, payments timing out — all at the same moment.'
   },
   logs:{
     n:'07 · Logs',
-    what:'Live application logs across checkout, orders, payments and Postgres, washed by severity.',
-    role:'The error itself: <b>could not acquire db connection — pool exhausted, 120 of 120 in use</b>.'
+    what:'What the servers are actually saying.',
+    role:'Here is the real error: <b>could not get a database connection — all 120 were taken</b>.'
   },
   traces:{
     n:'08 · Traces',
-    what:'One checkout request broken into nested spans, drawn at their real offsets.',
-    role:'Requests spend almost <b>4 seconds waiting for a DB connection</b>. Payment is not slow — it is queued behind that wait.'
+    what:'One order, broken into steps.',
+    role:'Nearly <b>4 seconds</b> just waiting for a database connection. Payment is not slow — it is stuck in the queue.'
   },
   k8s:{
     n:'09 · Kubernetes',
-    what:'Pod-level state for checkout-service: restarts, CPU and memory.',
-    role:'Pods are restarting — but this is a <b>symptom</b>. Replacements run the same v2.114.0 code and exhaust the pool again.'
+    what:'The containers running checkout.',
+    role:'They keep crashing. Restarting them is tempting and pointless — the same broken code comes right back.'
   },
   database:{
     n:'10 · Database',
-    what:'PostgreSQL primary: pool utilisation, connections held per service, and queries stuck waiting.',
-    role:'Postgres is at <b>100% connection utilisation</b>, with checkout alone consuming <b>93 of 120 connections</b>.'
+    what:'The database itself.',
+    role:'Every connection is taken. Checkout alone is holding <b>93 of the 120</b>.'
   },
   deployments:{
     n:'11 · Deployments',
-    what:'Release history for checkout-service.',
-    role:'<b>v2.114.0</b> shipped 8 minutes before the incident. <b>v2.113.2</b> had been stable for 11 days — which makes it the rollback target.'
+    what:'What shipped recently.',
+    role:'<b>v2.114.0</b> went out <b>8 minutes</b> before this started. The one before it ran fine for 11 days.'
   },
   github:{
     n:'12 · GitHub',
-    what:'The pull request behind the flagged release.',
-    role:'A commit merged <b>8 minutes earlier</b> creates a new PostgreSQL connection per cart item instead of reusing the pooled one — 2.1 to 7.8 connections per request.'
+    what:'The code change behind it.',
+    role:'Merged 8 minutes ago. It opens a <b>new database connection for every item in the cart</b> instead of reusing one.'
   },
   sessions:{
     n:'13 · Customer Sessions',
-    what:'What customers actually experienced on the checkout funnel.',
-    role:'Ground truth. The incident opens with failed orders here and only closes when one succeeds.'
+    what:'What customers actually saw.',
+    role:'This is where it started. It is not over until someone here can buy something.'
   },
 };
 
-/* A phase line, so the bar reflects where the incident actually is. */
+/* A short line for where the incident is right now. */
 const CC_PHASE={
-  normal:'No active incident — all services within threshold.',
-  incident:'Checkout failures rising. RemOps is pulling correlated signals.',
-  detecting:'P1 declared automatically from three signals moving together, not one threshold.',
-  investigating:'Tracing the failure backwards across eight signal sources.',
-  rootcause:'Root cause proven: the v2.114.0 deployment exhausted the PostgreSQL connection pool.',
-  remediation_ready:'Rollback staged to v2.113.2 — waiting for human approval.',
-  remediating:'Rolling back and draining pods. Watch the traces cross back under their thresholds.',
-  resolved:'Resolved and verified by a real customer order completing.',
+  normal:'Nothing wrong right now.',
+  incident:'Checkout is failing. RemOps is pulling the threads together.',
+  detecting:'Called it a P1 on its own — three things went wrong at once, not one.',
+  investigating:'Working backwards through eight sources.',
+  rootcause:'Found it. The new deploy drained the database pool.',
+  remediation_ready:'Fix is ready. Waiting on a human.',
+  remediating:'Rolling back. Watch the lines come down.',
+  resolved:'Fixed — and a real order just went through.',
 };
 
 function renderCC(){
