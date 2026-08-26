@@ -489,6 +489,36 @@ button:disabled{opacity:.45;cursor:not-allowed}
 }
 @keyframes barSweep{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
 
+
+/* ---------- What Happened ---------- */
+.xp{padding:0 !important}
+.xrow{display:grid;grid-template-columns:56px 1fr;border-bottom:1px solid var(--rule)}
+.xrow:last-child{border-bottom:none}
+.xn{
+  display:flex;align-items:flex-start;justify-content:center;padding:18px 0;
+  border-right:1px solid var(--rule);background:var(--paper);
+  font:600 17px var(--pm);color:var(--ink-3);letter-spacing:-.02em;
+}
+.xb{padding:17px 20px;min-width:0}
+.xb h3{
+  margin:0 0 7px;font:600 17px var(--pc);letter-spacing:-.005em;color:var(--ink);
+  line-height:1.25;
+}
+.xb p{margin:0;font:400 14.5px var(--pt);line-height:1.65;color:var(--ink-2);max-width:78ch}
+.xb b{color:var(--ink);font-weight:600}
+.xchain{
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+  font:600 11px var(--pm);letter-spacing:.06em;text-transform:uppercase;
+}
+.xchain span{padding:6px 11px;border:1px solid var(--rule-2);background:var(--paper);color:var(--ink-2)}
+.xchain span:first-child{border-color:var(--red);color:var(--red);background:var(--red-wash)}
+.xchain i{color:var(--rule-3);font-style:normal}
+@media (max-width:760px){
+  .xrow{grid-template-columns:42px 1fr}
+  .xb{padding:14px 15px}
+  .xb h3{font-size:15.5px}
+}
+
 /* ---------- Chart recorders ---------- */
 .stripwall{padding:0 !important}
 .strip{
@@ -1496,6 +1526,7 @@ function handlePlaceOrder(){
 state.rops = { activeSection:'command' };
 
 const NAV_ITEMS=[
+  {sec:'explain', label:'What Happened', icon:iconExplain, group:'Overview'},
   {sec:'command', label:'Incident Command', icon:iconAlert, group:'Overview'},
   {sec:'servicemap', label:'Service Map', icon:iconMap, group:'Overview'},
   {sec:'investigation', label:'Investigation', icon:iconSearch, group:'Overview'},
@@ -1511,6 +1542,7 @@ const NAV_ITEMS=[
   {sec:'report', label:'Incident Report', icon:iconReport, group:'Overview'},
 ];
 
+function iconExplain(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.7"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;}
 function iconAlert(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;}
 function iconMap(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9"/></svg>`;}
 function iconSearch(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;}
@@ -1600,7 +1632,8 @@ function renderConsoleSection(){
   const el=$('#ropsMain'); if(!el) return;
   const sec=state.rops.activeSection;
   let html='';
-  if(sec==='command') html = sectionCommand();
+  if(sec==='explain') html = sectionExplain();
+  else if(sec==='command') html = sectionCommand();
   else if(sec==='servicemap') html = sectionServiceMap();
   else if(sec==='investigation') html = sectionInvestigation();
   else if(sec==='remediation') html = sectionRemediation();
@@ -1644,6 +1677,11 @@ const CC_STORE={
 
 /* Console narration: what the page is, and what it tells you. */
 const CC_SECTIONS={
+  explain:{
+    n:'01 · What Happened',
+    what:'The whole thing in plain English, no jargon.',
+    role:'Read this first if the rest of the console looks like noise.'
+  },
   command:{
     n:'01 · Incident Command',
     what:'The main screen. Everything at a glance.',
@@ -1753,6 +1791,56 @@ function setCC(on){
   const b=$('#ccToggle');
   if(b){ b.textContent = on?'CC On':'CC Off'; b.setAttribute('aria-pressed', String(on)); }
   renderCC();
+}
+
+/* ---- What Happened (plain English) ---- */
+const EXPLAIN=[
+  ['A customer could not buy anything.',
+   'They tried to check out, it failed, they tried again, it failed again. That is where this starts — everything below traces back to that one order.'],
+  ['A code change 8 minutes earlier caused it.',
+   'It used to take <b>one database connection per order</b>. Now it takes <b>one per item in the cart</b>. So a five-item cart uses five connections instead of one.'],
+  ['The database ran out of connections.',
+   'It only allows <b>120 at a time</b>. Checkout alone ate up 93 of them and everything filled up. Every new order now sits waiting about <b>four seconds</b> for a free connection, then gives up. That is the error the customer saw.'],
+  ['Two things look broken but are not.',
+   'Payment looks like it is failing — it is just stuck in the queue behind checkout. The crashing containers are the same story: restart them and they come back running the same bad code. <b>Both are symptoms, not the problem.</b>'],
+  ['So the fix is undoing the deploy, not restarting things.',
+   'RemOps spotted three things going wrong <b>at the same moment</b>, then matched that timing to the deploy that had just gone out. It prepares the rollback — and stops to ask a human before touching production.'],
+];
+function sectionExplain(){
+  if(state.phase==='normal'){
+    return `${sevTopline('What Happened')}
+      <div class="panel">
+        <div class="panel-h"><h2>Plain English</h2><span class="sub">available once an incident starts</span></div>
+        <div class="empty-console">No incident yet — place an order on the storefront</div>
+      </div>`;
+  }
+  const known = ['rootcause','remediation_ready','remediating','resolved'].includes(state.phase);
+  return `
+    ${sevTopline('What Happened')}
+    <div class="panel">
+      <div class="panel-h">
+        <h2>Plain English</h2>
+        <span class="sub">${known?'root cause confirmed':'still investigating — the cause below is not proven yet'}</span>
+      </div>
+      <div class="xp">
+        ${EXPLAIN.map(([h,b],i)=>`
+          <div class="xrow">
+            <div class="xn">${i+1}</div>
+            <div class="xb"><h3>${h}</h3><p>${b}</p></div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>The chain, in order</h2></div>
+      <div class="xchain">
+        <span>code change ships</span><i>→</i>
+        <span>connections per order jump</span><i>→</i>
+        <span>pool runs out</span><i>→</i>
+        <span>checkout waits, then fails</span><i>→</i>
+        <span>payment backs up behind it</span>
+      </div>
+    </div>
+  `;
 }
 
 /* ---- Incident Command ---- */
