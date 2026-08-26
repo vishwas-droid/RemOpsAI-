@@ -814,40 +814,39 @@ table.k8s td:first-child{color:var(--ink)}
 /* ---------- CC narration bar ---------- */
 .ccbar{
   position:fixed;left:0;right:0;bottom:0;z-index:60;
-  display:grid;grid-template-columns:186px 1fr 40px;align-items:stretch;
+  display:grid;grid-template-columns:190px 1fr auto 40px;align-items:stretch;
   background:#FFFFFF;border-top:2px solid #15171c;
   font-family:'IBM Plex Sans','Inter',system-ui,sans-serif;
   box-shadow:0 -8px 24px -18px rgba(0,0,0,.5);
 }
 .ccbar[hidden]{display:none}
 .cc-tag{
-  padding:11px 14px;border-right:1px solid #dedbd1;background:#f2f0e9;
-  display:flex;flex-direction:column;gap:5px;justify-content:center;
+  padding:0 15px;border-right:1px solid #dedbd1;background:#f2f0e9;
+  display:flex;flex-direction:column;gap:4px;justify-content:center;
 }
-.cc-k{
-  font:600 8.5px 'IBM Plex Mono',monospace;letter-spacing:.24em;color:#8a8f9a;
+.cc-k{font:600 8.5px 'IBM Plex Mono',monospace;letter-spacing:.24em;color:#8a8f9a}
+.cc-sec{font:600 11.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#15171c;line-height:1.25}
+.cc-body{padding:16px 20px;display:flex;align-items:center;min-width:0;min-height:70px}
+.cc-line{
+  margin:0;font-size:16px;line-height:1.45;color:#15171c;max-width:86ch;
+  animation:ccIn .28s ease both;
 }
-.cc-sec{
-  font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.1em;
-  text-transform:uppercase;color:#15171c;line-height:1.25;
-}
-.cc-body{padding:11px 18px;display:flex;flex-direction:column;gap:5px;justify-content:center;min-width:0}
-.cc-what{margin:0;font-size:13.5px;line-height:1.5;color:#15171c;font-weight:500}
-.cc-role{margin:0;font-size:12.5px;line-height:1.5;color:#4d525c}
-.cc-role b{color:#c2261a;font-weight:600}
-.cc-what b{color:#c2261a;font-weight:600}
-.cc-x{
-  border:none;border-left:1px solid #dedbd1;background:#f2f0e9;color:#8a8f9a;
-  font-size:13px;cursor:pointer;
-}
+.cc-line b{color:#c2261a;font-weight:600}
+@keyframes ccIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.cc-dots{display:flex;align-items:center;gap:4px;padding:0 14px}
+.cc-dots i{width:5px;height:5px;background:#d4d0c6;display:block}
+.cc-dots i.on{background:#15171c}
+.cc-x{border:none;border-left:1px solid #dedbd1;background:#f2f0e9;color:#8a8f9a;font-size:13px;cursor:pointer}
 .cc-x:hover{background:#e9e6dd;color:#15171c}
 .cc-x:focus-visible{outline:2px solid #27476f;outline-offset:-3px}
-.ccbar.on-dark{background:#fff}
-#env-rops.cc-pad .rops-main{padding-bottom:132px}
-#env-store.cc-pad{padding-bottom:120px}
+#env-rops.cc-pad .rops-main{padding-bottom:140px}
+#env-store.cc-pad{padding-bottom:128px}
 @media (max-width:820px){
-  .ccbar{grid-template-columns:1fr 40px;grid-template-rows:auto auto}
-  .cc-tag{border-right:none;border-bottom:1px solid #dedbd1;flex-direction:row;align-items:center;gap:10px;grid-column:1 / -1}
+  .ccbar{grid-template-columns:1fr auto 40px;grid-template-rows:auto auto}
+  .cc-tag{border-right:none;border-bottom:1px solid #dedbd1;flex-direction:row;align-items:center;gap:10px;grid-column:1 / -1;padding:8px 15px}
+  .cc-line{font-size:14.5px}
+}
+@media (prefers-reduced-motion: reduce){ .cc-line{animation:none} }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -883,10 +882,8 @@ table.k8s td:first-child{color:var(--ink)}
 
 <div class="ccbar" id="ccBar" hidden>
   <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
-  <div class="cc-body">
-    <p class="cc-what" id="ccWhat"></p>
-    <p class="cc-role" id="ccRole"></p>
-  </div>
+  <div class="cc-body"><p class="cc-line" id="ccLine"></p></div>
+  <div class="cc-dots" id="ccDots"></div>
   <button class="cc-x" id="ccClose" aria-label="Hide narration">✕</button>
 </div>
 
@@ -1000,6 +997,7 @@ function clearTimers(){ state.timers.forEach(id=>clearTimeout(id)); state.timers
 
 function setPhase(p){
   state.phase=p;
+  ccAnnounce(p);
   updateStatusPill();
   renderActiveConsole();
   renderStoreCheckoutIfVisible();
@@ -1661,130 +1659,170 @@ function renderConsoleSection(){
    ============================================================ */
 const cc = { on:true };
 
-/* Storefront narration, keyed by store view. */
+/* Narration scripts. Each screen plays its lines in sequence, subtitle
+   style, so the demo explains itself with nobody talking over it. */
 const CC_STORE={
-  shop:['Someone is shopping. Normal day, normal session.',
-        'Everything that follows starts right here.'],
-  product:['Picking a size and colour, adding it to the cart.',
-           'Still fine — checkout has not been called yet.'],
-  cart:['Checking the cart before paying.',
-        'This order is about to hit the service that is broken.'],
-  checkout:['Hitting <b>Place Order</b> is what kicks the whole thing off.',
-            'All the customer sees is: something went wrong.'],
-  confirm:['Same cart that failed twice. Goes through now.',
-           'This is the real proof it is fixed.'],
+  shop:['Storefront',[
+    'A customer is shopping on meridian.com. An ordinary session.',
+    'Everything that follows starts right here.']],
+  product:['Storefront · Product',[
+    'Choosing a size and a colour, adding it to the cart.',
+    'Still healthy. Checkout has not been called yet.']],
+  cart:['Storefront · Cart',[
+    'Reviewing the cart before paying.']],
+  checkout:['Storefront · Checkout',[
+    'Placing the order. <b>This is the click that starts the incident.</b>',
+    'All the customer sees is that something went wrong.']],
+  confirm:['Storefront · Confirmed',[
+    'The same cart that failed twice goes through now.',
+    'This is the proof it is actually fixed.']],
 };
 
-/* Console narration: what the page is, and what it tells you. */
-const CC_SECTIONS={
-  explain:{
-    n:'01 · What Happened',
-    what:'The whole thing in plain English, no jargon.',
-    role:'Read this first if the rest of the console looks like noise.'
-  },
-  command:{
-    n:'01 · Incident Command',
-    what:'The main screen. Everything at a glance.',
-    role:'All five graphs share one timeline, so you can watch the problem spread.'
-  },
-  servicemap:{
-    n:'02 · Service Map',
-    what:'How the services connect to each other.',
-    role:'Plenty of things are red. This shows which one went first — the trail ends at the DB pool.'
-  },
-  investigation:{
-    n:'03 · Investigation',
-    what:'Where RemOps puts the pieces together.',
-    role:'Bad deploy → too many connections → pool ran dry → checkout died → payments backed up behind it.'
-  },
-  remediation:{
-    n:'04 · Remediation',
-    what:'The fix, ready to go. Roll back to <b>v2.113.2</b>.',
-    role:'It knows what broke and how to fix it. It still will not touch production until you say so.'
-  },
-  report:{
-    n:'05 · Incident Report',
-    what:'The write-up. Everything that happened, start to finish.',
-    role:'Nobody typed this. It is just what got recorded along the way.'
-  },
-  metrics:{
-    n:'06 · Metrics',
-    what:'The numbers, up close.',
-    role:'<b>39%</b> of checkouts failing, pages taking <b>4.8s</b>, payments timing out — all at the same moment.'
-  },
-  logs:{
-    n:'07 · Logs',
-    what:'What the servers are actually saying.',
-    role:'Here is the real error: <b>could not get a database connection — all 120 were taken</b>.'
-  },
-  traces:{
-    n:'08 · Traces',
-    what:'One order, broken into steps.',
-    role:'Nearly <b>4 seconds</b> just waiting for a database connection. Payment is not slow — it is stuck in the queue.'
-  },
-  k8s:{
-    n:'09 · Kubernetes',
-    what:'The containers running checkout.',
-    role:'They keep crashing. Restarting them is tempting and pointless — the same broken code comes right back.'
-  },
-  database:{
-    n:'10 · Database',
-    what:'The database itself.',
-    role:'Every connection is taken. Checkout alone is holding <b>93 of the 120</b>.'
-  },
-  deployments:{
-    n:'11 · Deployments',
-    what:'What shipped recently.',
-    role:'<b>v2.114.0</b> went out <b>8 minutes</b> before this started. The one before it ran fine for 11 days.'
-  },
-  github:{
-    n:'12 · GitHub',
-    what:'The code change behind it.',
-    role:'Merged 8 minutes ago. It opens a <b>new database connection for every item in the cart</b> instead of reusing one.'
-  },
-  sessions:{
-    n:'13 · Customer Sessions',
-    what:'What customers actually saw.',
-    role:'This is where it started. It is not over until someone here can buy something.'
-  },
+const CC_SCRIPT={
+  explain:['01 · What Happened',[
+    'The whole incident in five lines, before any of the detail.',
+    'A customer could not check out. A code change from eight minutes ago is why.',
+    'It used to take one database connection per order. Now it takes one per item in the cart.',
+    'The database allows 120. Checkout took 93. New orders wait about four seconds, then give up.',
+    'Payment looks broken and containers are crashing. Neither one is the problem.',
+    'The fix is undoing the deploy, not restarting anything.']],
+  command:['02 · Incident Command',[
+    'This is the RemOps console.',
+    'Top strip: incident number, severity, and a clock counting time to resolve.',
+    'The middle block is five separate signals drawn on <b>one shared timeline</b>.',
+    'Normally these live on five different dashboards. Stacked, you can see them all bend at the same moment.',
+    'One metric spiking is noise. Five bending together is an incident.',
+    'It declared this a P1 on its own, about five seconds in. Nobody was paged.']],
+  servicemap:['03 · Service Map',[
+    'Checkout, orders, payment and Postgres are all red. That alone tells you nothing.',
+    'The direction does. RemOps traces backwards and stops at the connection pool.',
+    'That is where the trail ends. Everything upstream of it is collateral.']],
+  investigation:['04 · Investigation',[
+    'Now everything joined up.',
+    'Eight sources attached. Four pieces of evidence correlated.',
+    'The deploy eight minutes prior. Pool going 42 to 100 percent. 1,842 pool errors. A database call from 240ms to 4.8 seconds.',
+    'Ninety-six percent confidence.',
+    'New deploy, too many connections, pool runs out, checkout fails, payment backs up behind it.']],
+  remediation:['05 · Remediation',[
+    'A six-step plan. Roll back to v2.113.2.',
+    'Here is the part worth noticing.',
+    'It has the diagnosis. It has the fix. It is staged and ready. And it has not touched anything.',
+    'It stops here and waits for a person.',
+    'Investigation is read-only, so that part runs unattended. Anything that writes to production is gated.',
+    'One click. That is the only human input in this entire demo.']],
+  report:['06 · Incident Report',[
+    'The write-up, generated on its own.',
+    'Impact, how it was detected, root cause, what changed, time to resolution.',
+    'And the order number that proves it works.',
+    'Nobody typed this. It is the record the investigation kept as it went.']],
+  metrics:['07 · Metrics',[
+    'The same signals, larger.',
+    'Do not read the numbers. Look at the shape.',
+    'All four turn at the same instant. That simultaneity is what RemOps keys on.']],
+  logs:['08 · Logs',[
+    'The logs have the real error.',
+    '<b>Could not acquire db connection. Pool exhausted, 120 of 120 in use.</b>',
+    'And the detector firing on three metrics moving together, not one threshold crossing.']],
+  traces:['09 · Traces',[
+    'One order, broken into steps.',
+    'Look at where each bar starts, not how long it is.',
+    'Payment does not begin until four seconds in. It is waiting behind the database call.',
+    'So payment timing out is downstream. Debugging the payment gateway would waste an hour.']],
+  k8s:['10 · Kubernetes',[
+    'Pod level. Two restarting, one crash-looping, memory climbing.',
+    'This is where most people stop and start restarting things.',
+    'It does nothing. New pods pull the same broken build and fill the pool up again.']],
+  database:['11 · Database',[
+    'Every connection is taken.',
+    'Checkout alone is holding <b>93 of the 120</b>. The other services share what is left.',
+    'Forty-two queries sitting there waiting for a connection that never frees up.',
+    'Which raises the right question. Why does checkout suddenly need that many?']],
+  deployments:['12 · Deployments',[
+    'Now the timing.',
+    '<b>v2.114.0 shipped eight minutes before this started.</b>',
+    'The version before it ran fine for eleven days.',
+    'Something stable for eleven days does not break on its own.']],
+  github:['13 · GitHub',[
+    'And here is the change itself.',
+    'It opens a fresh database connection for every item in the cart, instead of reusing the pooled one.',
+    'Connections per request went from 2.1 to 7.8. That is the mechanism, in the code.']],
+  sessions:['14 · Customer Sessions',[
+    'What customers actually saw.',
+    'Failed orders during the incident, and a successful one after.',
+    'This is the ground truth everything else is measured against.']],
 };
 
-/* A short line for where the incident is right now. */
-const CC_PHASE={
-  normal:'Nothing wrong right now.',
-  incident:'Checkout is failing. RemOps is pulling the threads together.',
-  detecting:'Called it a P1 on its own — three things went wrong at once, not one.',
-  investigating:'Working backwards through eight sources.',
-  rootcause:'Found it. The new deploy drained the database pool.',
-  remediation_ready:'Fix is ready. Waiting on a human.',
-  remediating:'Rolling back. Watch the lines come down.',
-  resolved:'Fixed — and a real order just went through.',
+/* Announcements that cut in when the incident itself moves on. */
+const CC_PHASE_SAY={
+  detecting:'<b>P1 declared automatically.</b> The clock starts now.',
+  investigating:'Investigating. Attaching eight signal sources.',
+  rootcause:'<b>Root cause found.</b> The deploy drained the database pool.',
+  remediation_ready:'<b>Plan ready.</b> Waiting for a human to approve it.',
+  remediating:'Rolling back. Watch the lines come back down.',
+  resolved:'<b>Resolved.</b> Clock stopped.',
 };
+
+/* ---- narration engine ---- */
+const ccPlay={ key:null, lines:[], i:0, timer:null, done:true };
+
+function ccLineMs(t){
+  const words=String(t).replace(/<[^>]+>/g,'').trim().split(/\s+/).length;
+  return clamp(360*words, 2600, 7200);
+}
+function ccPaint(){
+  const line=$('#ccLine'), dots=$('#ccDots');
+  if(!line) return;
+  const cur=ccPlay.lines[Math.max(0,ccPlay.i-1)]||'';
+  line.innerHTML=cur;
+  line.style.animation='none'; void line.offsetWidth; line.style.animation='';
+  if(dots) dots.innerHTML=ccPlay.lines.map((_,n)=>`<i class="${n<ccPlay.i?'on':''}"></i>`).join('');
+}
+function ccStep(){
+  if(ccPlay.i>=ccPlay.lines.length){ ccPlay.done=true; return; }
+  const t=ccPlay.lines[ccPlay.i];
+  ccPlay.i++;
+  ccPaint();
+  ccPlay.timer=setTimeout(ccStep, ccLineMs(t));
+}
+function ccRun(key,label,lines){
+  if(ccPlay.key===key) return;          // already showing this screen
+  clearTimeout(ccPlay.timer);
+  ccPlay.key=key; ccPlay.lines=lines.slice(); ccPlay.i=0; ccPlay.done=false;
+  const sec=$('#ccSection'); if(sec) sec.textContent=label;
+  ccStep();
+}
+/* An incident event jumps the queue and shows immediately. */
+function ccAnnounce(phase){
+  const t=CC_PHASE_SAY[phase];
+  if(!t || !cc.on) return;
+  clearTimeout(ccPlay.timer);
+  ccPlay.lines.splice(ccPlay.i, 0, t);
+  ccPlay.done=false;
+  ccStep();
+}
 
 function renderCC(){
   const bar=$('#ccBar'); if(!bar) return;
   const storeEl=$('#env-store'), ropsEl=$('#env-rops');
   if(!cc.on){
-    bar.hidden=true;
+    bar.hidden=true; clearTimeout(ccPlay.timer); ccPlay.done=true;
     storeEl.classList.remove('cc-pad'); ropsEl.classList.remove('cc-pad');
     return;
   }
   bar.hidden=false;
-  const onStore = storeEl.classList.contains('active');
+  const onStore=storeEl.classList.contains('active');
   storeEl.classList.toggle('cc-pad', onStore);
   ropsEl.classList.toggle('cc-pad', !onStore);
 
   if(onStore){
-    const [what,role]=CC_STORE[store.view]||CC_STORE.shop;
-    $('#ccSection').textContent='Storefront';
-    $('#ccWhat').innerHTML=what;
-    $('#ccRole').innerHTML=role;
+    const entry=CC_STORE[store.view]||CC_STORE.shop;
+    ccRun('store:'+store.view, entry[0], entry[1]);
     return;
   }
-  const sec=CC_SECTIONS[state.rops.activeSection]||CC_SECTIONS.command;
-  $('#ccSection').textContent=sec.n;
-  $('#ccWhat').innerHTML=sec.what;
-  $('#ccRole').innerHTML=sec.role+' <span style="color:#8a8f9a">— '+CC_PHASE[state.phase]+'</span>';
+  const sec=state.rops.activeSection;
+  const entry=CC_SCRIPT[sec];
+  if(!entry){ ccRun('rops:'+sec,'Console',['—']); return; }
+  ccRun('rops:'+sec, entry[0], entry[1]);
 }
 function setCC(on){
   cc.on=on;
@@ -2565,6 +2603,15 @@ async function playScript(myToken){
     await wait(380);
     return el;
   }
+  /* Hold on a screen until its narration has finished reading out. */
+  async function readOut(pad){
+    for(let i=0;i<600;i++){
+      if(dead()) return;
+      if(!cc.on || ccPlay.done) break;
+      await wait(150);
+    }
+    await wait(pad===undefined?700:pad);
+  }
   async function typeInto(selector, text, cap){
     if(cap) caption(cap);
     const el=await goto(selector);
@@ -2584,7 +2631,7 @@ async function playScript(myToken){
   if(dead()) return;
 
   caption('Customer browsing meridian.com');
-  await wait(500);
+  await readOut(300);
   await typeInto('#searchInput','jacket');
   if(dead()) return;
 
@@ -2597,7 +2644,7 @@ async function playScript(myToken){
   await click('.mer-cart','Opening cart');
   await click('#proceedCheckoutBtn','Proceeding to checkout');
   if(dead()) return;
-  await wait(700);
+  await readOut(400);
 
   await click('#placeOrderBtn','Customer clicks Place Order');
   if(dead()) return;
@@ -2612,36 +2659,55 @@ async function playScript(myToken){
   if(dead()) return;
   await wait(600);
 
-  await goto('[data-sec="command"]');
-  caption('P1 incident detected automatically');
-  await wait(2200);
+  await click('[data-sec="explain"]','What actually happened');
+  await readOut();
+  if(dead()) return;
+
+  await click('[data-sec="command"]','The incident, at a glance');
+  await readOut();
   if(dead()) return;
 
   await click('[data-sec="metrics"]','Error rate and latency spiking');
-  await wait(2400);
+  await readOut();
   if(dead()) return;
 
-  await click('[data-sec="k8s"]','Checkout pods restarting');
-  await wait(2000);
+  await click('[data-sec="k8s"]','Pods restarting — a dead end');
+  await readOut();
   if(dead()) return;
 
-  await click('[data-sec="logs"]','Application logs streaming errors');
-  await wait(2000);
+  await click('[data-sec="logs"]','The real error, in the logs');
+  await readOut();
+  if(dead()) return;
+
+  await click('[data-sec="database"]','Where the connections went');
+  await readOut();
+  if(dead()) return;
+
+  await click('[data-sec="traces"]','Why payment looks broken');
+  await readOut();
   if(dead()) return;
 
   await click('[data-sec="servicemap"]','Tracing the dependency chain');
-  await wait(2600);
+  await readOut();
+  if(dead()) return;
+
+  await click('[data-sec="deployments"]','What shipped just before');
+  await readOut();
+  if(dead()) return;
+
+  await click('[data-sec="github"]','The change that caused it');
+  await readOut();
   if(dead()) return;
 
   await click('[data-sec="investigation"]','Correlating evidence across the stack');
-  const gotRoot = await waitForPhase('rootcause', 20000);
+  await waitForPhase('rootcause', 20000);
   if(dead()) return;
-  if(gotRoot){ caption('Root cause identified'); await wait(1600); }
+  await readOut();
   await waitForPhase('remediation_ready', 15000);
   if(dead()) return;
 
   await click('[data-sec="remediation"]','Reviewing remediation plan');
-  await wait(1200);
+  await readOut();
   if(dead()) return;
   await click('#authBtn','Authorizing remediation');
   if(dead()) return;
@@ -2655,7 +2721,7 @@ async function playScript(myToken){
   caption('Verifying the customer can now order');
   await click('[data-env="store"]');
   if(dead()) return;
-  await wait(500);
+  await readOut(300);
   await click('#placeOrderBtn','Retrying the same order');
   if(dead()) return;
   await wait(1400);
@@ -2665,7 +2731,7 @@ async function playScript(myToken){
   await click('[data-env="rops"]');
   await click('[data-sec="report"]','Auto-generated incident report');
   if(dead()) return;
-  await wait(3200);
+  await readOut();
 
   caption('Demo complete — press Replay to run again');
   await wait(2200);
