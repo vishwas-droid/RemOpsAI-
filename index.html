@@ -780,6 +780,46 @@ table.k8s td:first-child{color:var(--ink)}
   .strip,.strip-axis{grid-template-columns:132px 1fr 82px}
 }
 
+
+/* ---------- CC narration bar ---------- */
+.ccbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  display:grid;grid-template-columns:186px 1fr 40px;align-items:stretch;
+  background:#FFFFFF;border-top:2px solid #15171c;
+  font-family:'IBM Plex Sans','Inter',system-ui,sans-serif;
+  box-shadow:0 -8px 24px -18px rgba(0,0,0,.5);
+}
+.ccbar[hidden]{display:none}
+.cc-tag{
+  padding:11px 14px;border-right:1px solid #dedbd1;background:#f2f0e9;
+  display:flex;flex-direction:column;gap:5px;justify-content:center;
+}
+.cc-k{
+  font:600 8.5px 'IBM Plex Mono',monospace;letter-spacing:.24em;color:#8a8f9a;
+}
+.cc-sec{
+  font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.1em;
+  text-transform:uppercase;color:#15171c;line-height:1.25;
+}
+.cc-body{padding:11px 18px;display:flex;flex-direction:column;gap:5px;justify-content:center;min-width:0}
+.cc-what{margin:0;font-size:13.5px;line-height:1.5;color:#15171c;font-weight:500}
+.cc-role{margin:0;font-size:12.5px;line-height:1.5;color:#4d525c}
+.cc-role b{color:#c2261a;font-weight:600}
+.cc-what b{color:#c2261a;font-weight:600}
+.cc-x{
+  border:none;border-left:1px solid #dedbd1;background:#f2f0e9;color:#8a8f9a;
+  font-size:13px;cursor:pointer;
+}
+.cc-x:hover{background:#e9e6dd;color:#15171c}
+.cc-x:focus-visible{outline:2px solid #27476f;outline-offset:-3px}
+.ccbar.on-dark{background:#fff}
+#env-rops.cc-pad .rops-main{padding-bottom:132px}
+#env-store.cc-pad{padding-bottom:120px}
+@media (max-width:820px){
+  .ccbar{grid-template-columns:1fr 40px;grid-template-rows:auto auto}
+  .cc-tag{border-right:none;border-bottom:1px solid #dedbd1;flex-direction:row;align-items:center;gap:10px;grid-column:1 / -1}
+}
+
 @media (prefers-reduced-motion: reduce){
   .mer-alert{animation:none}
   .status-pill.bad{animation:none}
@@ -796,6 +836,7 @@ table.k8s td:first-child{color:var(--ink)}
   </div>
   <div class="simbar-spacer"></div>
   <div class="status-pill" id="statusPill"><span class="pdot"></span><span id="statusPillText">All systems healthy</span></div>
+  <button class="btn btn-auto" id="ccToggle" aria-pressed="true">CC On</button>
   <button class="btn btn-auto" id="autoplayToggle">⏸ Pause Autoplay</button>
   <button class="btn btn-auto" id="replayBtn">⟲ Replay</button>
   <button class="btn btn-ghost" id="resetBtn">Reset Demo</button>
@@ -809,6 +850,15 @@ table.k8s td:first-child{color:var(--ink)}
 <div class="mer-toast" id="toast"></div>
 <div class="sim-cursor" id="simCursor"></div>
 <div class="sim-caption" id="simCaption"></div>
+
+<div class="ccbar" id="ccBar" hidden>
+  <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
+  <div class="cc-body">
+    <p class="cc-what" id="ccWhat"></p>
+    <p class="cc-role" id="ccRole"></p>
+  </div>
+  <button class="cc-x" id="ccClose" aria-label="Hide narration">✕</button>
+</div>
 
 <script>
 (function(){
@@ -1215,6 +1265,7 @@ function wireStoreChrome(){
 }
 
 function renderStoreBody(){
+  setTimeout(renderCC,0);
   const el=$('#merBody');
   if(!el) return;
   if(store.view==='home') el.innerHTML = homeHtml();
@@ -1568,6 +1619,140 @@ function renderConsoleSection(){
     : html.slice(0,cut) + '<div class="deck-body">' + html.slice(cut+14) + '</div>';
   $$('.panel-h h2', el).forEach((h,i)=>h.setAttribute('data-n', String(i+1).padStart(2,'0')));
   wireConsoleSection(sec);
+  renderCC();
+}
+
+
+/* ============================================================
+   CC NARRATION — explains each page and its place in the chain
+   ============================================================ */
+const cc = { on:true };
+
+/* Storefront narration, keyed by store view. */
+const CC_STORE={
+  shop:['A customer is shopping on meridian.com — an ordinary session, nothing staged.',
+        'Everything RemOps is about to find starts from this one customer.'],
+  product:['Product page. Size and colour selected, item added to the cart.',
+           'Still healthy — checkout has not been called yet.'],
+  cart:['Cart review before checkout.',
+        'The order is about to hit checkout-service, which is running the bad release.'],
+  checkout:['Checkout. Clicking <b>Place Order</b> calls checkout-service and starts the incident.',
+            'The failure the customer sees is <b>HTTP 500 — checkout_failed</b>.'],
+  confirm:['Order confirmed after the rollback — the same cart that failed twice now goes through.',
+           'This is the verification that actually closes the incident.'],
+};
+
+/* Console narration: what the page is, and its role in the causal chain. */
+const CC_SECTIONS={
+  command:{
+    n:'01 · Incident Command',
+    what:'The summary screen: status banner, phase ladder, signal wall, service lamps and the incident ledger.',
+    role:'Five signals share one time axis here, so the failure can be watched spreading across the stack instead of read off five separate graphs.'
+  },
+  servicemap:{
+    n:'02 · Service Map',
+    what:'The production dependency graph. RemOps lights each hop as it traces the call chain backwards from the failure.',
+    role:'Checkout, orders, payment and Postgres are all degraded — the map shows which one is <b>first</b>. The trace terminates at the DB connection pool.'
+  },
+  investigation:{
+    n:'03 · Investigation',
+    what:'Eight signal sources attached, four pieces of evidence correlated, and a root cause stated with a confidence score.',
+    role:'The causal chain: new deployment → connection explosion → DB pool exhaustion → checkout failure → downstream payment degradation.'
+  },
+  remediation:{
+    n:'04 · Remediation',
+    what:'A six-step rollback plan to v2.113.2, the last known-good release, staged and ready.',
+    role:'RemOps has the diagnosis and the fix, and still will not touch production. It stops here for human approval.'
+  },
+  report:{
+    n:'05 · Incident Report',
+    what:'Impact, detection method, timestamps, root cause, remediation, time to resolution and the verifying order number.',
+    role:'Not written afterwards — it is the record the investigation kept as it happened.'
+  },
+  metrics:{
+    n:'06 · Metrics',
+    what:'Each signal as a chart recorder with its alarm threshold and now / peak / floor readouts.',
+    role:'Confirms the pattern: <b>39% checkout errors</b>, <b>4.8s p95 latency</b>, and payment timeouts downstream — all bending at the same instant.'
+  },
+  logs:{
+    n:'07 · Logs',
+    what:'Live application logs across checkout, orders, payments and Postgres, washed by severity.',
+    role:'The error itself: <b>could not acquire db connection — pool exhausted, 120 of 120 in use</b>.'
+  },
+  traces:{
+    n:'08 · Traces',
+    what:'One checkout request broken into nested spans, drawn at their real offsets.',
+    role:'Requests spend almost <b>4 seconds waiting for a DB connection</b>. Payment is not slow — it is queued behind that wait.'
+  },
+  k8s:{
+    n:'09 · Kubernetes',
+    what:'Pod-level state for checkout-service: restarts, CPU and memory.',
+    role:'Pods are restarting — but this is a <b>symptom</b>. Replacements run the same v2.114.0 code and exhaust the pool again.'
+  },
+  database:{
+    n:'10 · Database',
+    what:'PostgreSQL primary: pool utilisation, connections held per service, and queries stuck waiting.',
+    role:'Postgres is at <b>100% connection utilisation</b>, with checkout alone consuming <b>93 of 120 connections</b>.'
+  },
+  deployments:{
+    n:'11 · Deployments',
+    what:'Release history for checkout-service.',
+    role:'<b>v2.114.0</b> shipped 8 minutes before the incident. <b>v2.113.2</b> had been stable for 11 days — which makes it the rollback target.'
+  },
+  github:{
+    n:'12 · GitHub',
+    what:'The pull request behind the flagged release.',
+    role:'A commit merged <b>8 minutes earlier</b> creates a new PostgreSQL connection per cart item instead of reusing the pooled one — 2.1 to 7.8 connections per request.'
+  },
+  sessions:{
+    n:'13 · Customer Sessions',
+    what:'What customers actually experienced on the checkout funnel.',
+    role:'Ground truth. The incident opens with failed orders here and only closes when one succeeds.'
+  },
+};
+
+/* A phase line, so the bar reflects where the incident actually is. */
+const CC_PHASE={
+  normal:'No active incident — all services within threshold.',
+  incident:'Checkout failures rising. RemOps is pulling correlated signals.',
+  detecting:'P1 declared automatically from three signals moving together, not one threshold.',
+  investigating:'Tracing the failure backwards across eight signal sources.',
+  rootcause:'Root cause proven: the v2.114.0 deployment exhausted the PostgreSQL connection pool.',
+  remediation_ready:'Rollback staged to v2.113.2 — waiting for human approval.',
+  remediating:'Rolling back and draining pods. Watch the traces cross back under their thresholds.',
+  resolved:'Resolved and verified by a real customer order completing.',
+};
+
+function renderCC(){
+  const bar=$('#ccBar'); if(!bar) return;
+  const storeEl=$('#env-store'), ropsEl=$('#env-rops');
+  if(!cc.on){
+    bar.hidden=true;
+    storeEl.classList.remove('cc-pad'); ropsEl.classList.remove('cc-pad');
+    return;
+  }
+  bar.hidden=false;
+  const onStore = storeEl.classList.contains('active');
+  storeEl.classList.toggle('cc-pad', onStore);
+  ropsEl.classList.toggle('cc-pad', !onStore);
+
+  if(onStore){
+    const [what,role]=CC_STORE[store.view]||CC_STORE.shop;
+    $('#ccSection').textContent='Storefront';
+    $('#ccWhat').innerHTML=what;
+    $('#ccRole').innerHTML=role;
+    return;
+  }
+  const sec=CC_SECTIONS[state.rops.activeSection]||CC_SECTIONS.command;
+  $('#ccSection').textContent=sec.n;
+  $('#ccWhat').innerHTML=sec.what;
+  $('#ccRole').innerHTML=sec.role+' <span style="color:#8a8f9a">— '+CC_PHASE[state.phase]+'</span>';
+}
+function setCC(on){
+  cc.on=on;
+  const b=$('#ccToggle');
+  if(b){ b.textContent = on?'CC On':'CC Off'; b.setAttribute('aria-pressed', String(on)); }
+  renderCC();
 }
 
 /* ---- Incident Command ---- */
@@ -1779,6 +1964,7 @@ function renderKpisLive(){
     err.className='v '+(v>10?'red':v>2?'amber':'mint');
   }
   const foot=$('#deckFoot'); if(foot) foot.innerHTML=sideFootHtml();
+  renderCC();
 }
 
 /* ---- Service Map ---- */
@@ -2190,6 +2376,7 @@ function switchEnv(env){
   $$('.env').forEach(e=>e.classList.remove('active'));
   $('#env-'+env).classList.add('active');
   $$('.envbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-env')===env));
+  renderCC();
 }
 
 $('#envSwitch').addEventListener('click', e=>{
@@ -2197,6 +2384,8 @@ $('#envSwitch').addEventListener('click', e=>{
   switchEnv(b.getAttribute('data-env'));
 });
 $('#resetBtn').addEventListener('click', resetDemo);
+$('#ccToggle').addEventListener('click', ()=> setCC(!cc.on));
+$('#ccClose').addEventListener('click', ()=> setCC(false));
 
 /* ============================================================
    AUTOPLAY — simulated cursor drives the whole demo hands-free
@@ -2419,6 +2608,7 @@ $('#replayBtn').addEventListener('click', ()=>{
 store.lastOrderItems=[];
 renderStore();
 renderActiveConsole();
+setCC(true);
 updateStatusPill();
 updateTriggerBtn();
 
