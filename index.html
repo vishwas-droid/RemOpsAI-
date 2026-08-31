@@ -1740,6 +1740,7 @@ const NAV_ITEMS=[
   {sec:'investigation', label:'Investigation', icon:iconSearch, group:'Overview'},
   {sec:'remediation', label:'Remediation', icon:iconWrench, group:'Overview'},
   {sec:'sandbox', label:'Sandbox Validation', icon:iconFlask, group:'Overview'},
+  {sec:'trust', label:'Trust & Validation', icon:iconShield, group:'Overview'},
   {sec:'metrics', label:'Metrics', icon:iconChart, group:'Telemetry'},
   {sec:'logs', label:'Logs', icon:iconLogs, group:'Telemetry'},
   {sec:'traces', label:'Traces', icon:iconTrace, group:'Telemetry'},
@@ -1766,6 +1767,7 @@ function iconGh(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="
 function iconUsers(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>`;}
 function iconReport(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6M9 9h1"/></svg>`;}
 function iconFlask(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6.5L3.5 18a2 2 0 0 0 1.7 3h13.6a2 2 0 0 0 1.7-3L15 8.5V2"/><path d="M7 2h10M6.5 15h11"/></svg>`;}
+function iconShield(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>`;}
 
 function renderRopsShell(){
   const groups=['Overview','Telemetry','Infrastructure'];
@@ -1776,7 +1778,8 @@ function renderRopsShell(){
       idx++;
       const disabled = n.sec==='report' && !(state.incident && state.incident.resolvedAt);
       const badge = n.sec==='command' && BROKEN_PHASES.has(state.phase) ? `<span class="nbadge">P1</span>` :
-                    n.sec==='report' && state.incident && state.incident.resolvedAt ? `<span class="nbadge ok">RDY</span>` : '';
+                    n.sec==='report' && state.incident && state.incident.resolvedAt ? `<span class="nbadge ok">RDY</span>` :
+                    n.sec==='trust' && (state.phase==='remediating'||state.phase==='resolved') ? `<span class="nbadge ok">NEW</span>` : '';
       return `<button class="navitem ${state.rops.activeSection===n.sec?'active':''}" data-sec="${n.sec}" data-idx="${String(idx).padStart(2,'0')}" ${disabled?'disabled':''}>${n.icon()}<span>${n.label}</span>${badge}</button>`;
     }).join('')}
   `).join('');
@@ -1849,6 +1852,7 @@ function renderConsoleSection(){
   else if(sec==='investigation') html = sectionInvestigation();
   else if(sec==='remediation') html = sectionRemediation();
   else if(sec==='sandbox') html = sectionSandbox();
+  else if(sec==='trust') html = sectionTrust();
   else if(sec==='metrics') html = sectionMetrics();
   else if(sec==='logs') html = sectionLogs();
   else if(sec==='traces') html = sectionTraces();
@@ -1919,48 +1923,53 @@ const CC_SECTIONS={
     what:'The fix, tested somewhere that is not production first.',
     role:'Same rollback, run against an isolated copy with replayed traffic. If it fails here, RemOps tears it down and retries automatically — production never sees it.'
   },
+  trust:{
+    n:'06 · Trust & Validation',
+    what:'Not how many incidents it resolved. Whether it was actually right.',
+    role:'Root-cause accuracy, confidence calibration, sandbox catch rate, blast-radius accuracy — checked against every past incident, not just this one.'
+  },
   report:{
-    n:'06 · Incident Report',
+    n:'07 · Incident Report',
     what:'The write-up. Everything that happened, start to finish.',
     role:'Nobody typed this. It is just what got recorded along the way.'
   },
   metrics:{
-    n:'07 · Metrics',
+    n:'08 · Metrics',
     what:'The numbers, up close.',
     role:'<b>39%</b> of checkouts failing, pages taking <b>4.8s</b>, payments timing out — all at the same moment.'
   },
   logs:{
-    n:'08 · Logs',
+    n:'09 · Logs',
     what:'What the servers are actually saying.',
     role:'Here is the real error: <b>could not get a database connection — all 120 were taken</b>.'
   },
   traces:{
-    n:'09 · Traces',
+    n:'10 · Traces',
     what:'One order, broken into steps.',
     role:'Nearly <b>4 seconds</b> just waiting for a database connection. Payment is not slow — it is stuck in the queue.'
   },
   k8s:{
-    n:'10 · Kubernetes',
+    n:'11 · Kubernetes',
     what:'The containers running checkout.',
     role:'They keep crashing. Restarting them is tempting and pointless — the same broken code comes right back.'
   },
   database:{
-    n:'11 · Database',
+    n:'12 · Database',
     what:'The database itself.',
     role:'Every connection is taken. Checkout alone is holding <b>93 of the 120</b>.'
   },
   deployments:{
-    n:'12 · Deployments',
+    n:'13 · Deployments',
     what:'What shipped recently.',
     role:'<b>v2.114.0</b> went out <b>8 minutes</b> before this started. The one before it ran fine for 11 days.'
   },
   github:{
-    n:'13 · GitHub',
+    n:'14 · GitHub',
     what:'The code change behind it.',
     role:'Merged 8 minutes ago. It opens a <b>new database connection for every item in the cart</b> instead of reusing one.'
   },
   sessions:{
-    n:'14 · Customer Sessions',
+    n:'15 · Customer Sessions',
     what:'What customers actually saw.',
     role:'This is where it started. It is not over until someone here can buy something.'
   },
@@ -2481,6 +2490,128 @@ function sectionSandbox(){
       <div class="bicon">i</div>
       <div class="btext"><h3>Safety Gate</h3><p>Production promotion is blocked until this sandbox run reports PASSED. There is no path from here to production on a failure.</p></div>
     </div>` : ''}
+  `;
+}
+
+/* ---- Trust & Validation ----
+   Illustrative incident history for this simulator — not a claim about
+   real measured data. The point is to show the shape of what a real
+   trust layer tracks: not "how many incidents resolved" but whether the
+   diagnosis was right, the confidence was calibrated, the fix was safe,
+   the predicted impact matched reality, engineers actually trusted it,
+   it improved on repeats, and what it silently missed. */
+const INCIDENT_HISTORY=[
+  {id:'INC-2041', date:'Aug 6',  service:'checkout-service',  cause:'Connection pool exhaustion (deploy)',       confidence:96, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:1.1, repeatOf:'INC-1901', overridden:false},
+  {id:'INC-1988', date:'Jul 29', service:'payment-service',   cause:'Upstream gateway timeout misconfig',        confidence:91, correct:true,  predictedBlast:'1 service', actualBlast:'2 services', sandbox:'passed', wouldHaveFailed:false, resolveMin:2.4, repeatOf:null, overridden:true},
+  {id:'INC-1955', date:'Jul 21', service:'search-service',    cause:'Cache TTL misconfiguration',                confidence:88, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:3.0, repeatOf:null, overridden:false},
+  {id:'INC-1901', date:'Jul 12', service:'checkout-service',  cause:'Connection pool exhaustion (deploy)',       confidence:83, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:true,  resolveMin:4.8, repeatOf:null, overridden:false},
+  {id:'INC-1877', date:'Jul 5',  service:'inventory-service', cause:'Stale replica reads after failover',        confidence:74, correct:false, predictedBlast:'1 service', actualBlast:'3 services', sandbox:'passed', wouldHaveFailed:false, resolveMin:6.2, repeatOf:null, overridden:true},
+  {id:'INC-1830', date:'Jun 24', service:'auth-service',      cause:'Token cache eviction storm',                confidence:95, correct:true,  predictedBlast:'2 services', actualBlast:'2 services', sandbox:'passed', wouldHaveFailed:false, resolveMin:1.6, repeatOf:null, overridden:false},
+  {id:'INC-1799', date:'Jun 18', service:'order-service',     cause:'Retry storm on payment timeout',            confidence:79, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:3.5, repeatOf:null, overridden:false},
+  {id:'INC-1742', date:'Jun 9',  service:'checkout-service',  cause:'Unclassified — no signal correlation found', confidence:31, correct:false, predictedBlast:'—', actualBlast:'1 service', sandbox:'—', wouldHaveFailed:false, resolveMin:null, repeatOf:null, overridden:false, missed:true},
+];
+function computeTrustStats(history){
+  const evaluable=history.filter(h=>!h.missed);
+  const missed=history.filter(h=>h.missed);
+  const correct=evaluable.filter(h=>h.correct).length;
+  const highConf=evaluable.filter(h=>h.confidence>=90);
+  const highConfCorrect=highConf.filter(h=>h.correct).length;
+  const blastMatches=evaluable.filter(h=>h.predictedBlast===h.actualBlast).length;
+  const overrides=evaluable.filter(h=>h.overridden).length;
+  return {
+    total:history.length,
+    accuracyPct:Math.round(100*correct/evaluable.length),
+    wrongCount:evaluable.length-correct,
+    highConfCount:highConf.length,
+    calibrationPct: highConf.length?Math.round(100*highConfCorrect/highConf.length):null,
+    caught: evaluable.filter(h=>h.wouldHaveFailed).length,
+    blastPct: Math.round(100*blastMatches/evaluable.length),
+    overridePct: Math.round(100*overrides/evaluable.length),
+    missedCount: missed.length,
+  };
+}
+function sectionTrust(){
+  const stats=computeTrustStats(INCIDENT_HISTORY);
+  const thisRepeat=INCIDENT_HISTORY.find(h=>h.repeatOf);
+  const prevOccurrence=thisRepeat ? INCIDENT_HISTORY.find(h=>h.id===thisRepeat.repeatOf) : null;
+  return `
+    ${sevTopline('Trust & Validation')}
+    <div class="banner b-info">
+      <div class="bicon">i</div>
+      <div class="btext">
+        <h3>Not how many incidents. Whether it was right.</h3>
+        <p>It's easy to demo an AI that finds a root cause and fixes an incident. The harder question is whether you can trust it in production. So we don't just count resolutions — we track whether the diagnosis was correct, whether the confidence was calibrated, whether the fix was safe, whether the predicted impact was accurate, whether engineers actually trusted it, whether it improved on repeats, and what it missed.</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h2>Root-Cause Accuracy</h2><span class="sub">speed and correctness, tracked separately</span></div>
+        <div class="evi-grid">
+          <div class="evi-card"><div class="k">This incident</div><div class="v">${state.confidence||0}% confidence</div><div class="s">Verified correct — confirmed by a successful customer order after the fix.</div></div>
+          <div class="evi-card"><div class="k">Across last ${INCIDENT_HISTORY.length} incidents</div><div class="v">${stats.accuracyPct}% correct</div><div class="s">${stats.wrongCount} case${stats.wrongCount===1?'':'s'} where the first hypothesis was wrong — tracked, not hidden.</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Confidence Calibration</h2><span class="sub">does 90%+ confidence mean 90%+ correct?</span></div>
+        <div class="evi-grid">
+          <div class="evi-card"><div class="k">High-confidence bucket (90%+)</div><div class="v">${stats.highConfCount} incidents</div><div class="s">Confidence is validated after the fact, not just displayed on screen.</div></div>
+          <div class="evi-card"><div class="k">Actual accuracy in that bucket</div><div class="v">${stats.calibrationPct}%</div><div class="s">${stats.calibrationPct>=90?'Well-calibrated — the number means what it says.':'Below target for this bucket — flagged for retraining.'}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h2>Sandbox Catch Rate</h2><span class="sub">a caught failure here is the system working</span></div>
+        <div class="evi-grid">
+          <div class="evi-card"><div class="k">This incident</div><div class="v">${state.sandbox.attempts>1?'Caught 1 bad fix':'Passed first attempt'}</div><div class="s">${state.sandbox.attempts>1?'Sandbox failed once, auto-rolled-back, retried — production was never touched.':'No failure this run — validated cleanly before promotion.'}</div></div>
+          <div class="evi-card"><div class="k">Across history</div><div class="v">${stats.caught} fix${stats.caught===1?'':'es'} caught</div><div class="s">Each would have caused a second incident if shipped straight to production. That's safety value, not a bad metric.</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Blast-Radius Accuracy</h2><span class="sub">predicted impact vs. what actually happened</span></div>
+        <div class="evi-grid">
+          <div class="evi-card"><div class="k">This incident</div><div class="v">1 service — checkout-service</div><div class="s">Predicted and actual matched exactly.</div></div>
+          <div class="evi-card"><div class="k">Across history</div><div class="v">${stats.blastPct}% matched</div><div class="s">When the estimate is wrong, engineers stop trusting one-click approval — this is tracked deliberately.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Learning Signal — Repeat Incidents</h2><span class="sub">same class, measured against its own history</span></div>
+      ${prevOccurrence ? `
+        <div class="report-field"><div class="k">Incident class</div><div class="v">checkout-service connection-pool exhaustion</div></div>
+        <div class="report-field"><div class="k">First occurrence</div><div class="v">${prevOccurrence.id} · ${prevOccurrence.date} · resolved in ${prevOccurrence.resolveMin} min</div></div>
+        <div class="report-field"><div class="k">This occurrence</div><div class="v">${thisRepeat.id} · ${thisRepeat.date} · resolved in ${thisRepeat.resolveMin} min</div></div>
+        <div class="report-field"><div class="k">Gap</div><div class="v" style="color:var(--green)">${Math.round((1-thisRepeat.resolveMin/prevOccurrence.resolveMin)*100)}% faster the second time — same class, real improvement.</div></div>
+      ` : `<div class="empty-console" style="padding:16px 10px">No repeat incident recorded yet for this class.</div>`}
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h2>Human Override Rate</h2></div>
+        <div class="gaugewrap" style="padding:14px 0"><span class="num">${stats.overridePct}%</span><span class="cap">of plans were edited<br>or rejected, not<br>approved as-is</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>False-Quiet Rate</h2></div>
+        <div class="gaugewrap" style="padding:14px 0"><span class="num" style="color:var(--red)">${stats.missedCount}</span><span class="cap">incident${stats.missedCount===1?'':'s'} out of ${stats.total}<br>should have triggered<br>detection and didn't</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Incident History</h2><span class="sub">${INCIDENT_HISTORY.length} incidents · full log</span></div>
+      <table class="k8s">
+        <tr><th>Incident</th><th>Date</th><th>Service</th><th>Root Cause</th><th>Conf.</th><th>Verified</th><th>Blast Radius</th><th>Sandbox</th><th>Resolved</th></tr>
+        ${INCIDENT_HISTORY.map(h=>`
+          <tr>
+            <td>${esc(h.id)}${h.repeatOf?' <span style="color:var(--ink-3);font-weight:400">(repeat)</span>':''}</td>
+            <td>${esc(h.date)}</td>
+            <td>${esc(h.service)}</td>
+            <td>${esc(h.cause)}</td>
+            <td>${h.missed?'—':h.confidence+'%'}</td>
+            <td>${h.missed?'<span style="color:var(--red)">missed</span>':h.correct?'<span style="color:var(--green)">✓ correct</span>':'<span style="color:var(--red)">✗ wrong</span>'}</td>
+            <td>${h.missed?'—':esc(h.predictedBlast)+' → '+esc(h.actualBlast)}</td>
+            <td>${h.wouldHaveFailed?'<span style="color:var(--amber)">caught 1</span>':h.sandbox==='—'?'—':'passed'}</td>
+            <td>${h.resolveMin?h.resolveMin+' min':'—'}</td>
+          </tr>`).join('')}
+      </table>
+    </div>
   `;
 }
 
