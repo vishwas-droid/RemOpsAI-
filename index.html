@@ -79,32 +79,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .btn-auto:hover{border-color:#3a4666}
 .simbar{flex-wrap:wrap;row-gap:8px}
 
-/* ============ SIMULATED CURSOR (autoplay) ============ */
-.sim-cursor{
-  position:fixed;top:0;left:0;width:20px;height:20px;border-radius:50%;
-  background:radial-gradient(circle at 32% 28%, #ffffff, #cfe0ff 45%, var(--accent) 100%);
-  box-shadow:0 0 0 4px rgba(76,141,255,.16), 0 8px 18px -6px rgba(0,0,0,.55);
-  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
-  transition:left .6s cubic-bezier(.45,0,.2,1), top .6s cubic-bezier(.45,0,.2,1), opacity .25s ease;
-  opacity:0;
-}
-.sim-cursor.show{opacity:1}
-.sim-cursor::after{
-  content:"";position:absolute;inset:-6px;border-radius:50%;border:1.5px solid rgba(76,141,255,.4);opacity:0;
-}
-.sim-cursor.clicking::after{animation:cursorPulse .5s ease-out}
-@keyframes cursorPulse{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(2)}}
-.sim-caption{
-  position:fixed;top:0;left:0;z-index:9999;background:#0d1119;border:1px solid #2a3450;color:#e7ecf7;
-  padding:6px 13px;border-radius:20px;font:600 12px var(--sans);white-space:nowrap;pointer-events:none;
-  transform:translate(-50%,calc(-100% - 20px));opacity:0;transition:left .6s cubic-bezier(.45,0,.2,1), top .6s cubic-bezier(.45,0,.2,1), opacity .25s ease;
-  box-shadow:0 12px 26px -12px rgba(0,0,0,.6);
-}
-.sim-caption.show{opacity:1}
-@media (prefers-reduced-motion: reduce){
-  .sim-cursor, .sim-caption{transition:opacity .2s ease}
-}
-
 /* ============ VIEWPORT ============ */
 .viewport{flex:1;min-height:0;background:var(--bg)}
 .env{display:none;min-height:calc(100vh - 49px)}
@@ -857,6 +831,76 @@ table.k8s td:first-child{color:var(--ink)}
   .status-pill.bad{animation:none}
   .pod-status.crash .d{animation:none}
 }
+
+/* ============================================================
+   LIVE RACE — Manual On-Call vs RemOpsAI, side by side, on the
+   same real incident, both clocks running in real wall-time.
+   Nothing here is simulated pacing — every second shown is a
+   second that actually passed while the founder drove it.
+   ============================================================ */
+#env-race{background:var(--bg);min-height:calc(100vh - 49px);padding:24px 24px 60px}
+.race-shell{max-width:1240px;margin:0 auto}
+.race-intro{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.race-intro h1{margin:0 0 6px;font:800 21px var(--sans);letter-spacing:-.01em;color:var(--ink)}
+.race-intro p{margin:0;font:400 13px/1.6 var(--sans);color:#8b93ab;max-width:60ch}
+.race-start{
+  flex:none;padding:13px 22px;border-radius:10px;border:1px solid var(--accent);
+  background:linear-gradient(180deg,#5a97ff,var(--accent));color:#fff;font:700 13.5px var(--sans);
+  cursor:pointer;letter-spacing:.01em;
+}
+.race-start:hover:not(:disabled){filter:brightness(1.07)}
+.race-start:disabled{opacity:.4;cursor:default}
+.race-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:940px){.race-grid{grid-template-columns:1fr}}
+.race-col{border:1px solid #232c40;border-radius:14px;background:var(--bg-raised);display:flex;flex-direction:column;overflow:hidden}
+.race-col.manual{border-color:#3a3038}
+.race-col.remops{border-color:#1c3a3a}
+.race-col-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid #1c2334}
+.race-col-head .ico{width:30px;height:30px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.race-col.manual .ico{background:rgba(240,71,90,.14);color:var(--danger)}
+.race-col.remops .ico{background:rgba(34,211,183,.14);color:var(--accent-2)}
+.race-col-head .ti{flex:1;min-width:0}
+.race-col-head .ti b{display:block;font:700 14px var(--sans);color:var(--ink)}
+.race-col-head .ti span{display:block;font:500 10.5px var(--mono);letter-spacing:.05em;color:#5c657c;margin-top:2px}
+.race-clock{font:800 26px/1 var(--mono);letter-spacing:-.02em;color:var(--ink);flex:none;font-variant-numeric:tabular-nums}
+.race-col.remops .race-clock{color:var(--accent-2)}
+.race-col.manual .race-clock.done{color:var(--warn)}
+.race-col.remops .race-clock.done{color:var(--ok)}
+.race-col-body{padding:14px 16px;flex:1;overflow-y:auto;max-height:520px}
+.race-note{font:400 11.5px/1.6 var(--sans);color:#5c657c;font-style:italic;margin:0 0 12px}
+.race-step{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #232c40;border-radius:9px;background:#0d1119;margin-bottom:8px}
+.race-step.done{border-color:rgba(34,199,122,.35);background:rgba(34,199,122,.06)}
+.race-step.active{border-color:var(--warn);box-shadow:0 0 0 1px rgba(245,166,35,.2)}
+.race-step .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#3a4666}
+.race-step.done .dot{background:var(--ok)}
+.race-step.active .dot{background:var(--warn);animation:racePulse 1s ease-in-out infinite}
+@keyframes racePulse{0%,100%{opacity:1}50%{opacity:.35}}
+.race-step .txt{flex:1;min-width:0;font:500 12.5px/1.5 var(--sans);color:#c6cce0}
+.race-step.done .txt{color:var(--ink)}
+.race-step .sub{display:block;font:400 10.5px var(--mono);color:#5c657c;margin-top:2px}
+.race-stepbtn{
+  flex:none;padding:7px 12px;border-radius:7px;border:1px solid #3a4666;background:#161d2b;color:#c6cce0;
+  font:600 11px var(--sans);cursor:pointer;
+}
+.race-stepbtn:hover:not(:disabled){border-color:#5a6690;color:var(--ink)}
+.race-stepbtn:disabled{opacity:.3;cursor:default}
+.race-riskflag{
+  margin-top:2px;display:inline-block;padding:2px 7px;border-radius:5px;background:var(--danger-soft);
+  color:var(--danger);font:600 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;
+}
+.race-feed{display:flex;flex-direction:column;gap:6px}
+.race-feed .ln{padding:8px 11px;border-radius:8px;background:#0d1119;border:1px solid #1c2334;font:400 12px/1.5 var(--sans);color:#c6cce0}
+.race-feed .ln .t{font:600 10px var(--mono);color:#5c657c;margin-right:8px}
+.race-authbar{margin-top:10px;padding:12px;border:1px solid var(--warn);border-radius:9px;background:var(--warn-soft)}
+.race-authbar p{margin:0 0 8px;font:500 12px/1.5 var(--sans);color:var(--ink)}
+.race-authbtn{width:100%;padding:11px;border:none;border-radius:8px;background:var(--warn);color:#1c1300;font:700 12px var(--sans);cursor:pointer}
+.race-authbtn:hover{filter:brightness(1.06)}
+.race-result{margin-top:18px;padding:18px 20px;border-radius:12px;border:1px solid #2a3450;background:linear-gradient(180deg,#101828,#0d1119);display:none}
+.race-result.show{display:block}
+.race-result h3{margin:0 0 10px;font:700 14px var(--sans);color:var(--ink)}
+.race-result .rrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1c2334;font:500 13px var(--sans);color:#c6cce0}
+.race-result .rrow:last-child{border-bottom:none}
+.race-result .rrow b{color:var(--ink);font:700 14px var(--mono)}
 </style>
 </head>
 <body>
@@ -865,23 +909,21 @@ table.k8s td:first-child{color:var(--ink)}
   <div class="envswitch" id="envSwitch">
     <button class="envbtn active" data-env="store"><span class="b" style="background:var(--mer-accent)"></span>meridian.com — Storefront</button>
     <button class="envbtn" data-env="rops"><span class="b" style="background:var(--accent)"></span>RemOpsAI Console</button>
+    <button class="envbtn" data-env="race"><span class="b" style="background:var(--danger)"></span>⚡ Manual vs RemOps</button>
   </div>
   <div class="simbar-spacer"></div>
   <div class="status-pill" id="statusPill"><span class="pdot"></span><span id="statusPillText">All systems healthy</span></div>
   <button class="btn btn-auto" id="ccToggle" aria-pressed="true">CC On</button>
-  <button class="btn btn-auto" id="autoplayToggle">⏸ Pause Autoplay</button>
-  <button class="btn btn-auto" id="replayBtn">⟲ Replay</button>
   <button class="btn btn-ghost" id="resetBtn">Reset Demo</button>
 </div>
 
 <div class="viewport">
   <div class="env active" id="env-store"></div>
   <div class="env" id="env-rops"></div>
+  <div class="env" id="env-race"></div>
 </div>
 
 <div class="mer-toast" id="toast"></div>
-<div class="sim-cursor" id="simCursor"></div>
-<div class="sim-caption" id="simCaption"></div>
 
 <div class="ccbar" id="ccBar" hidden>
   <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
@@ -993,6 +1035,7 @@ function pushLog(level, svc, msg, tsDate){
 function pushTimeline(text){
   state.timeline.push({t:fmtTime(now()), d:text});
   if(state.rops.activeSection==='investigation' || state.rops.activeSection==='command') renderActiveConsole();
+  renderRaceIfVisible();
 }
 function pushSession(text, ok){
   state.sessions.unshift({sid:'#'+(8800+Math.floor(Math.random()*90)), t:text, ok, ts:fmtTime(now())});
@@ -1023,6 +1066,7 @@ function setPhase(p){
   renderActiveConsole();
   renderStoreCheckoutIfVisible();
   updateTriggerBtn();
+  renderRaceIfVisible();
 }
 
 function startIncident(){
@@ -1316,7 +1360,6 @@ function updateTriggerBtn(){}
    RESET
    ============================================================ */
 function resetDemo(){
-  stopAutoplayScript();
   clearTimers();
   state.phase='normal';
   state.incident=null;
@@ -1333,8 +1376,11 @@ function resetDemo(){
   state.metrics.errorRate.cur=0.15; state.metrics.p95.cur=230; state.metrics.dbPool.cur=41; state.metrics.payTimeout.cur=0.1;
   Object.values(state.metrics).forEach(m=>m.hist=[]);
   store.view='home'; store.selectedProduct=null; store.cart=[];
+  raceState.started=false; raceState.startedAt=null;
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.manualBusy=false;
+  raceState.remopsStartedAt=null; raceState.remopsDoneAt=null;
   updateStatusPill(); updateTriggerBtn();
-  renderStore(); renderActiveConsole();
+  renderStore(); renderActiveConsole(); renderRaceIfVisible();
 }
 
 /* ============================================================
@@ -2639,6 +2685,140 @@ function wireConsoleSection(sec){
 }
 
 /* ============================================================
+   LIVE RACE — Manual On-Call vs RemOpsAI, on the same real
+   incident, both clocks real wall-time. One click starts both;
+   the manual side has to be clicked through step by step, the
+   same as a human actually would — nothing here is scripted pacing.
+   ============================================================ */
+const MANUAL_STEPS=[
+  {label:'Open the paging alert and acknowledge it', sub:'checkout-service error rate paging on-call'},
+  {label:'Open the logs dashboard and search for errors', sub:'grep across checkout-service, order-service, payment-service'},
+  {label:'Open the metrics dashboard and check error rate / latency', sub:'cross-reference against the alert'},
+  {label:'Open the tracing tool and follow one slow request', sub:'checkout → order → payment → postgres'},
+  {label:'Open the Kubernetes dashboard and check pod health', sub:'pods restarting — cause, or symptom?'},
+  {label:'Open the database dashboard and check connection pool', sub:'cross-reference saturation timing against the trace'},
+  {label:'Open the deploy history and find what shipped recently', sub:'read the diff, form a hypothesis'},
+  {label:'Write the fix and push it straight to production', sub:'no isolated test — hoping it works', risky:true},
+];
+const raceState={
+  started:false, startedAt:null,
+  manualIdx:0, manualDoneAt:null, manualBusy:false,
+  remopsStartedAt:null, remopsDoneAt:null,
+};
+function fmtRaceClock(ms){
+  const s=Math.max(0,Math.floor(ms/1000));
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+function raceIsActive(){ const el=$('#env-race'); return !!(el && el.classList.contains('active')); }
+function renderRaceIfVisible(){ if(raceIsActive()) renderRace(); }
+
+function raceManualBody(){
+  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — click through every step yourself, the same as an on-call engineer actually has to.</p>`;
+  return `
+    <p class="race-note">Click each step in order.</p>
+    ${MANUAL_STEPS.map((st,i)=>{
+      const done = i<raceState.manualIdx;
+      const active = i===raceState.manualIdx && !raceState.manualDoneAt;
+      const busy = active && raceState.manualBusy;
+      return `<div class="race-step ${done?'done':active?'active':''}">
+        <span class="dot"></span>
+        <span class="txt">${esc(st.label)}<span class="sub">${esc(st.sub)}</span>${st.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
+        ${done ? '' : active ? `<button class="race-stepbtn" data-step="${i}" ${busy?'disabled':''}>${busy?'Working…':'Do it'}</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
+      </div>`;
+    }).join('')}
+  `;
+}
+function raceRemopsBody(){
+  if(!raceState.started) return `<p class="race-note">RemOps starts the moment the race begins — no clicking required until it asks for authorization.</p>`;
+  const tl=state.timeline;
+  const needsAuth = state.phase==='remediation_ready';
+  return `
+    ${needsAuth ? `<div class="race-authbar"><p>Fix is ready. RemOps is waiting on a human to authorize it before touching anything.</p><button class="race-authbtn" id="raceAuthBtn">Authorize Remediation</button></div>` : ''}
+    <div class="race-feed">
+      ${tl.length ? tl.slice().reverse().map(e=>`<div class="ln"><span class="t">${e.t}</span>${esc(e.d)}</div>`).join('') : `<div class="ln">Waiting for the first signal…</div>`}
+    </div>
+  `;
+}
+function renderRace(){
+  const el=$('#env-race'); if(!el) return;
+  const manualDone = raceState.manualDoneAt!=null;
+  const remopsDone = raceState.remopsDoneAt!=null;
+  const manualMs = raceState.started ? (manualDone?raceState.manualDoneAt:Date.now())-raceState.startedAt : 0;
+  const remopsMs = raceState.started ? (remopsDone?raceState.remopsDoneAt:Date.now())-raceState.startedAt : 0;
+  const racing = raceState.started && !(manualDone && remopsDone);
+  el.innerHTML=`
+    <div class="race-shell">
+      <div class="race-intro">
+        <div>
+          <h1>Same incident. Two ways to handle it.</h1>
+          <p>Both clocks are real wall-clock time — nothing sped up, nothing scripted. Click through the manual side yourself while RemOps handles the same incident on its own.</p>
+        </div>
+        <button class="race-start" id="raceStartBtn" ${racing?'disabled':''}>${racing?'Racing…':(raceState.started?'↻ Run it again':'▶ Start the race')}</button>
+      </div>
+      <div class="race-grid">
+        <div class="race-col manual">
+          <div class="race-col-head">
+            <span class="ico">🧑‍💻</span>
+            <span class="ti"><b>Manual On-Call Engineer</b><span>you click every step</span></span>
+            <span class="race-clock ${manualDone?'done':''}" id="raceManualClock">${fmtRaceClock(manualMs)}</span>
+          </div>
+          <div class="race-col-body" id="raceManualBody">${raceManualBody()}</div>
+        </div>
+        <div class="race-col remops">
+          <div class="race-col-head">
+            <span class="ico">⚙️</span>
+            <span class="ti"><b>RemOpsAI</b><span>autonomous, one authorization</span></span>
+            <span class="race-clock ${remopsDone?'done':''}" id="raceRemopsClock">${fmtRaceClock(remopsMs)}</span>
+          </div>
+          <div class="race-col-body" id="raceRemopsBody">${raceRemopsBody()}</div>
+        </div>
+      </div>
+      <div class="race-result ${manualDone&&remopsDone?'show':''}">
+        <h3>Result — this run</h3>
+        <div class="rrow"><span>Manual process</span><b>${fmtRaceClock(manualMs)}</b></div>
+        <div class="rrow"><span>RemOpsAI</span><b>${fmtRaceClock(remopsMs)}</b></div>
+      </div>
+    </div>
+  `;
+  const startBtn=$('#raceStartBtn'); if(startBtn) startBtn.addEventListener('click', startRace);
+  $$('.race-stepbtn[data-step]', el).forEach(b=>b.addEventListener('click', ()=>doManualStep(+b.getAttribute('data-step'))));
+  const authBtn=$('#raceAuthBtn'); if(authBtn) authBtn.addEventListener('click', authorizeRemediation);
+}
+function startRace(){
+  if(raceState.started && !(raceState.manualDoneAt && raceState.remopsDoneAt)) return;
+  if(state.phase!=='normal') resetDemo();
+  raceState.started=true;
+  raceState.startedAt=Date.now();
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.manualBusy=false;
+  raceState.remopsStartedAt=Date.now(); raceState.remopsDoneAt=null;
+  startIncident();
+  renderRace();
+}
+function doManualStep(i){
+  if(!raceState.started || raceState.manualBusy || raceState.manualDoneAt) return;
+  if(i!==raceState.manualIdx) return;
+  raceState.manualBusy=true;
+  renderRace();
+  setTimeout(()=>{
+    raceState.manualBusy=false;
+    raceState.manualIdx++;
+    if(raceState.manualIdx>=MANUAL_STEPS.length) raceState.manualDoneAt=Date.now();
+    renderRace();
+  }, 700+Math.random()*900);
+}
+function tickRace(){
+  if(!raceState.started) return;
+  if(state.phase==='resolved' && !raceState.remopsDoneAt){
+    raceState.remopsDoneAt = (state.incident && state.incident.resolvedAt) ? state.incident.resolvedAt.getTime() : Date.now();
+    renderRaceIfVisible();
+  }
+  if(!raceIsActive()) return;
+  const mc=$('#raceManualClock'), rc=$('#raceRemopsClock');
+  if(mc) mc.textContent = fmtRaceClock((raceState.manualDoneAt?raceState.manualDoneAt:Date.now())-raceState.startedAt);
+  if(rc) rc.textContent = fmtRaceClock((raceState.remopsDoneAt?raceState.remopsDoneAt:Date.now())-raceState.startedAt);
+}
+
+/* ============================================================
    ENV SWITCH / WIRING / INIT
    ============================================================ */
 function switchEnv(env){
@@ -2646,6 +2826,7 @@ function switchEnv(env){
   $('#env-'+env).classList.add('active');
   $$('.envbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-env')===env));
   renderCC();
+  if(env==='race') renderRace();
 }
 
 $('#envSwitch').addEventListener('click', e=>{
@@ -2656,239 +2837,17 @@ $('#resetBtn').addEventListener('click', resetDemo);
 $('#ccToggle').addEventListener('click', ()=> setCC(!cc.on));
 $('#ccClose').addEventListener('click', ()=> setCC(false));
 
-/* ============================================================
-   AUTOPLAY — simulated cursor drives the whole demo hands-free
-   ============================================================ */
-const cursorEl = $('#simCursor');
-const captionEl = $('#simCaption');
-const autoplay = { token:0, paused:false, running:false, timers:[] };
-
-function autoRawWait(ms){
-  return new Promise(res=>{ const id=setTimeout(res, ms); autoplay.timers.push(id); });
-}
-function clearAutoplayTimers(){ autoplay.timers.forEach(id=>clearTimeout(id)); autoplay.timers=[]; }
-
-function placeCursorAt(x,y){
-  cursorEl.style.left = x+'px'; cursorEl.style.top = y+'px';
-  captionEl.style.left = x+'px'; captionEl.style.top = y+'px';
-}
-function pulseClick(){
-  cursorEl.classList.remove('clicking'); void cursorEl.offsetWidth; cursorEl.classList.add('clicking');
-}
-function setPauseBtnUI(){
-  const b=$('#autoplayToggle');
-  if(!b) return;
-  b.textContent = autoplay.paused ? '▶ Resume Autoplay' : '⏸ Pause Autoplay';
-}
-
-function stopAutoplayScript(){
-  autoplay.token++;
-  autoplay.running=false;
-  autoplay.paused=false;
-  clearAutoplayTimers();
-  setPauseBtnUI();
-  cursorEl.classList.remove('show');
-  captionEl.classList.remove('show');
-}
-
-async function playScript(myToken){
-  const dead = ()=> myToken!==autoplay.token;
-  async function wait(ms){
-    let elapsed=0;
-    while(elapsed<ms){
-      if(dead()) return;
-      if(autoplay.paused){ await autoRawWait(150); continue; }
-      const chunk=Math.min(150, ms-elapsed);
-      await autoRawWait(chunk);
-      elapsed+=chunk;
-    }
-  }
-  async function waitForPhase(target, timeoutMs){
-    const start=Date.now();
-    const targetIdx=PHASES.indexOf(target);
-    while(PHASES.indexOf(state.phase)<targetIdx){
-      if(dead()) return false;
-      if(Date.now()-start>timeoutMs) return false;
-      await wait(200);
-    }
-    return true;
-  }
-  function caption(text){
-    captionEl.textContent=text;
-    captionEl.classList.add('show');
-  }
-  async function findEl(selector){
-    for(let i=0;i<20;i++){
-      const el=document.querySelector(selector);
-      if(el) return el;
-      if(dead()) return null;
-      await autoRawWait(100);
-    }
-    return document.querySelector(selector);
-  }
-  async function goto(selector){
-    const el=await findEl(selector);
-    if(!el || dead()) return null;
-    const r=el.getBoundingClientRect();
-    cursorEl.classList.add('show');
-    placeCursorAt(r.left+r.width/2, r.top+r.height/2);
-    captionEl.classList.add('show');
-    await wait(650);
-    return dead() ? null : el;
-  }
-  async function click(selector, cap){
-    if(cap) caption(cap);
-    const el=await goto(selector);
-    if(!el || dead()) return null;
-    await wait(180);
-    pulseClick();
-    el.click();
-    await wait(380);
-    return el;
-  }
-  async function typeInto(selector, text, cap){
-    if(cap) caption(cap);
-    const el=await goto(selector);
-    if(!el || dead()) return;
-    el.focus();
-    for(const ch of text){
-      if(dead()) return;
-      el.value += ch;
-      el.dispatchEvent(new Event('input',{bubbles:true}));
-      await autoRawWait(38);
-    }
-    await wait(400);
-  }
-
-  autoplay.running=true;
-  await wait(900);
-  if(dead()) return;
-
-  caption('Customer browsing meridian.com');
-  await wait(500);
-  await typeInto('#searchInput','jacket');
-  if(dead()) return;
-
-  await click('.mer-card','Opening product page');
-  if(dead()) return;
-  await click('[data-size="L"]','Selecting size');
-  await click('[data-color="Midnight"]','Selecting color');
-  await click('#addCartBtn','Adding to cart');
-  if(dead()) return;
-  await click('.mer-cart','Opening cart');
-  await click('#proceedCheckoutBtn','Proceeding to checkout');
-  if(dead()) return;
-  await wait(700);
-
-  await click('#placeOrderBtn','Customer clicks Place Order');
-  if(dead()) return;
-  await wait(900);
-  caption('Order failed — customer retries');
-  await click('#placeOrderBtn');
-  if(dead()) return;
-  await wait(900);
-
-  caption('Escalating to RemOpsAI…');
-  await click('[data-env="rops"]');
-  if(dead()) return;
-  await wait(600);
-
-  await goto('[data-sec="command"]');
-  caption('P1 incident detected automatically');
-  await wait(2200);
-  if(dead()) return;
-
-  await click('[data-sec="metrics"]','Error rate and latency spiking');
-  await wait(2400);
-  if(dead()) return;
-
-  await click('[data-sec="k8s"]','Checkout pods restarting');
-  await wait(2000);
-  if(dead()) return;
-
-  await click('[data-sec="logs"]','Application logs streaming errors');
-  await wait(2000);
-  if(dead()) return;
-
-  await click('[data-sec="servicemap"]','Tracing the dependency chain');
-  await wait(2600);
-  if(dead()) return;
-
-  await click('[data-sec="investigation"]','Correlating evidence across the stack');
-  const gotRoot = await waitForPhase('rootcause', 20000);
-  if(dead()) return;
-  if(gotRoot){ caption('Root cause identified'); await wait(1600); }
-  await waitForPhase('remediation_ready', 15000);
-  if(dead()) return;
-
-  await click('[data-sec="remediation"]','Reviewing remediation plan');
-  await wait(1200);
-  if(dead()) return;
-  await click('#authBtn','Authorizing remediation');
-  if(dead()) return;
-
-  await click('[data-sec="sandbox"]','Testing the fix in an isolated sandbox first');
-  await waitForPhase('remediating', 30000);
-  if(dead()) return;
-
-  await goto('[data-sec="command"]');
-  caption('Sandbox passed — rolling back production, restoring connections…');
-  await waitForPhase('resolved', 20000);
-  if(dead()) return;
-  await wait(1000);
-
-  caption('Verifying the customer can now order');
-  await click('[data-env="store"]');
-  if(dead()) return;
-  await wait(500);
-  await click('#placeOrderBtn','Retrying the same order');
-  if(dead()) return;
-  await wait(1400);
-  caption('Order confirmed');
-  await wait(1400);
-
-  await click('[data-env="rops"]');
-  await click('[data-sec="report"]','Auto-generated incident report');
-  if(dead()) return;
-  await wait(3200);
-
-  caption('Demo complete — press Replay to run again');
-  await wait(2200);
-  captionEl.classList.remove('show');
-  cursorEl.classList.remove('show');
-  autoplay.running=false;
-}
-
-function launchAutoplay(){
-  clearAutoplayTimers();
-  autoplay.token++;
-  autoplay.paused=false;
-  setPauseBtnUI();
-  playScript(autoplay.token);
-}
-
-$('#autoplayToggle').addEventListener('click', ()=>{
-  if(!autoplay.running) return;
-  autoplay.paused=!autoplay.paused;
-  setPauseBtnUI();
-});
-$('#replayBtn').addEventListener('click', ()=>{
-  stopAutoplayScript();
-  resetDemo();
-  autoRawWait(400).then(launchAutoplay);
-});
-
 store.lastOrderItems=[];
 renderStore();
 renderActiveConsole();
+renderRace();
 setCC(true);
 updateStatusPill();
 updateTriggerBtn();
 
 state.heartbeat = setInterval(heartbeatTick, 700);
 setInterval(ambientTick, 3600);
-
-launchAutoplay();
+setInterval(tickRace, 250);
 
 })();
 </script>
