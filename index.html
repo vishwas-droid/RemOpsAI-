@@ -889,6 +889,14 @@ table.k8s td:first-child{color:var(--ink)}
   margin-top:2px;display:inline-block;padding:2px 7px;border-radius:5px;background:var(--danger-soft);
   color:var(--danger);font:600 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;
 }
+.race-impact-mini{display:flex;gap:18px;flex-wrap:wrap;margin:4px 0 16px}
+.race-impact-mini span{font:600 12px var(--mono);color:var(--danger)}
+.race-cta{
+  padding:12px 20px;border-radius:9px;border:1px solid var(--accent);
+  background:linear-gradient(180deg,#5a97ff,var(--accent));color:#fff;font:700 12.5px var(--sans);
+  letter-spacing:.01em;cursor:pointer;margin-bottom:6px;
+}
+.race-cta:hover{filter:brightness(1.07)}
 .race-feed{display:flex;flex-direction:column;gap:6px}
 .race-feed .ln{padding:8px 11px;border-radius:8px;background:#0d1119;border:1px solid #1c2334;font:400 12px/1.5 var(--sans);color:#c6cce0}
 .race-feed .ln .t{font:600 10px var(--mono);color:#5c657c;margin-right:8px}
@@ -1150,6 +1158,51 @@ table.k8s td:first-child{color:var(--ink)}
 .toolfull-overlay.terminal .toolfull-body{background:#000}
 .toolfull-overlay.terminal .toolfull-foot{background:#000;border-top:1px solid #1a1a1a}
 .toolfull-overlay.terminal .term-full{background:#000;border-color:#222}
+
+/* embedded (non-modal) use of the themed tool panel, inside the
+   Manual Engineer Console's main pane */
+.toolfull-overlay.mc-embed{position:static;inset:auto;z-index:auto;background:transparent;display:flex;flex-direction:column;height:100%}
+
+/* dead-end trap (e.g. "restart the pods") — costs real time, fails */
+.tf-trap-btn{margin-top:14px;padding:10px 16px;border-radius:8px;border:1px solid var(--warn);background:var(--warn-soft);color:#f5c97a;font:700 12px var(--sans);cursor:pointer}
+.tf-trap-btn:hover{filter:brightness(1.08)}
+.tf-trap-fail{margin-top:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--danger);background:var(--danger-soft);color:#ffb0ba;font:500 12.5px/1.5 var(--sans)}
+.toolfull-overlay.light .tf-trap-btn{background:#FFF8C5;border-color:#9a6700;color:#4d3800}
+.toolfull-overlay.light .tf-trap-fail{background:#FFEBE9;border-color:#cf222e;color:#82071e}
+
+/* ============================================================
+   MANUAL ENGINEER CONSOLE — its own top-level tab, structured the
+   same way as the RemOpsAI Console: a sidebar of every tool plus a
+   main pane, so the manual investigation carries the same weight.
+   ============================================================ */
+#env-manual{background:var(--bg);min-height:calc(100vh - 49px)}
+.mc-shell{display:flex;min-height:calc(100vh - 49px);align-items:stretch}
+.mc-side{width:256px;flex:none;background:#0d1119;border-right:1px solid #1c2334;display:flex;flex-direction:column}
+.mc-brand{padding:16px 18px 13px;border-bottom:1px solid #1c2334}
+.mc-brand b{display:block;font:700 14px var(--sans);color:var(--ink)}
+.mc-brand span{display:block;font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#5c657c;margin-top:3px}
+.mc-navlist{flex:1;overflow-y:auto;padding:8px 0}
+.mc-navitem{width:100%;display:flex;align-items:center;gap:10px;padding:9px 16px;background:none;border:none;text-align:left;cursor:pointer;font:500 12.5px var(--sans);color:#8b93ab}
+.mc-navitem .idx{font:600 9px var(--mono);color:#5c657c;width:14px;flex:none}
+.mc-navitem .nm{flex:1;min-width:0}
+.mc-navitem .nm b{display:block;color:inherit;font-weight:600}
+.mc-navitem .nm span{display:block;font:400 10px var(--sans);color:#5c657c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-navitem .dot{width:8px;height:8px;border-radius:50%;flex:none;background:#3a4666}
+.mc-navitem.done .dot{background:var(--ok)}
+.mc-navitem.active{background:#161d2b;color:var(--ink)}
+.mc-navitem.active .nm span{color:#8b93ab}
+.mc-navitem.locked{opacity:.4;cursor:default}
+.mc-navitem:not(.locked):hover{background:#12182450;color:var(--ink)}
+.mc-sidefoot{padding:13px 16px;border-top:1px solid #1c2334;font:500 10px var(--mono);color:#5c657c;letter-spacing:.03em}
+.mc-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.mc-topbar{display:flex;align-items:center;gap:26px;padding:13px 22px;background:#0d1119;border-bottom:1px solid #1c2334;flex-wrap:wrap}
+.mc-clockblk .k{font:600 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#5c657c}
+.mc-clockblk .v{font:800 22px var(--mono);color:var(--warn);letter-spacing:-.01em}
+.mc-impact{display:flex;gap:26px}
+.mc-impact .item .k{font:600 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#5c657c}
+.mc-impact .item .v{font:700 15px var(--mono);color:var(--danger)}
+.mc-content{flex:1;overflow-y:auto;min-height:0}
+.mc-empty{padding:70px 30px;text-align:center;color:#5c657c;font:500 13px var(--sans);max-width:440px;margin:0 auto;line-height:1.6}
 </style>
 </head>
 <body>
@@ -1159,6 +1212,7 @@ table.k8s td:first-child{color:var(--ink)}
     <button class="envbtn active" data-env="store"><span class="b" style="background:var(--mer-accent)"></span>meridian.com — Storefront</button>
     <button class="envbtn" data-env="rops"><span class="b" style="background:var(--accent)"></span>RemOpsAI Console</button>
     <button class="envbtn" data-env="race"><span class="b" style="background:var(--danger)"></span>⚡ Manual vs RemOps</button>
+    <button class="envbtn" data-env="manual"><span class="b" style="background:#8b93ab"></span>🧑‍💻 Manual Engineer Console</button>
   </div>
   <div class="simbar-spacer"></div>
   <div class="status-pill" id="statusPill"><span class="pdot"></span><span id="statusPillText">All systems healthy</span></div>
@@ -1170,11 +1224,10 @@ table.k8s td:first-child{color:var(--ink)}
   <div class="env active" id="env-store"></div>
   <div class="env" id="env-rops"></div>
   <div class="env" id="env-race"></div>
+  <div class="env" id="env-manual"></div>
 </div>
 
 <div class="mer-toast" id="toast"></div>
-
-<div class="toolfull-overlay" id="toolfullOverlay" hidden></div>
 
 <div class="ccbar" id="ccBar" hidden>
   <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
@@ -1629,11 +1682,11 @@ function resetDemo(){
   Object.values(state.metrics).forEach(m=>m.hist=[]);
   store.view='home'; store.selectedProduct=null; store.cart=[];
   raceState.started=false; raceState.startedAt=null;
-  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.openTool=null;
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.k8sRestart='idle';
   raceState.remopsStartedAt=null; raceState.remopsDoneAt=null;
-  const raceOverlay=$('#toolfullOverlay'); if(raceOverlay){ raceOverlay.hidden=true; raceOverlay.innerHTML=''; raceOverlay.className='toolfull-overlay'; }
+  mcState.selected=null;
   updateStatusPill(); updateTriggerBtn();
-  renderStore(); renderActiveConsole(); renderRaceIfVisible();
+  renderStore(); renderActiveConsole(); renderRaceIfVisible(); renderManualConsoleIfVisible();
 }
 
 /* ============================================================
@@ -3025,6 +3078,9 @@ const TOOLS=[
         ${k8sFullRow('checkout-service-7f9d4c-h6bp','run',0,'11d','ip-10-0-4-12')}
         ${k8sFullRow('checkout-service-7f9d4c-t4ry','run',0,'11d','ip-10-0-4-13')}
       </table>
+      ${raceState.k8sRestart==='idle' ? `<button class="tf-trap-btn" id="k8sRestartBtn">⟲ Restart the crashing pods — quick fix?</button>` : ''}
+      ${raceState.k8sRestart==='restarting' ? `<div class="tf-trap-fail">⏳ Restarting checkout-service-7f9d4c-n0lz and checkout-service-7f9d4c-2k9x… watching for recovery.</div>` : ''}
+      ${raceState.k8sRestart==='failed' ? `<div class="tf-trap-fail">❌ Pods came back healthy — error rate didn't move. That wasn't it. Back to investigating.</div>` : ''}
       <div class="dd-note" style="margin-top:12px">Restarting pods usually means something — but the code hasn't changed since the last deploy, only the connection behavior. Restarting keeps bringing back the same problem.</div>`},
   {name:'RDS Monitor', sub:'postgres-primary — Database Performance', dot:'#FF9900', theme:'light',
     full:()=>`
@@ -3111,73 +3167,118 @@ const TOOLS=[
 ];
 const raceState={
   started:false, startedAt:null,
-  manualIdx:0, manualDoneAt:null, openTool:null,
+  manualIdx:0, manualDoneAt:null, k8sRestart:'idle',
   remopsStartedAt:null, remopsDoneAt:null,
 };
+const mcState={ selected:null };
 function fmtRaceClock(ms){
   const s=Math.max(0,Math.floor(ms/1000));
   return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 }
 function raceIsActive(){ const el=$('#env-race'); return !!(el && el.classList.contains('active')); }
 function renderRaceIfVisible(){ if(raceIsActive()) renderRace(); }
+function mcIsActive(){ const el=$('#env-manual'); return !!(el && el.classList.contains('active')); }
+function renderManualConsoleIfVisible(){ if(mcIsActive()) renderManualConsole(); }
+function mcClockMs(){
+  if(!raceState.started || !raceState.startedAt) return 0;
+  return (raceState.manualDoneAt || Date.now()) - raceState.startedAt;
+}
+/* Illustrative impact of the incident dragging on — ticks with the
+   same real clock as everything else. Framed as an estimate, not a
+   verified figure, same as the rest of this simulated storefront. */
+function computeImpact(){
+  if(!raceState.started || !raceState.startedAt) return {dollars:0, customers:0};
+  const elapsedSec=Math.max(0, ((raceState.manualDoneAt||Date.now())-raceState.startedAt)/1000);
+  return { dollars: Math.round(elapsedSec*46), customers: Math.round(elapsedSec*0.6) };
+}
 
 function raceManualBody(){
-  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — open the same ${TOOLS.length} tools an on-call engineer actually has to, one at a time.</p>`;
+  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — open the same ${TOOLS.length} tools an on-call engineer actually has to, in the Manual Engineer Console.</p>`;
+  const impact=computeImpact();
+  const next=TOOLS[raceState.manualIdx];
   return `
-    <p class="race-note">Open each dashboard in order — ${TOOLS.length} full tools before a hypothesis.</p>
-    ${TOOLS.map((t,i)=>{
-      const done = i<raceState.manualIdx;
-      const active = i===raceState.manualIdx && !raceState.manualDoneAt;
-      return `<div class="race-step ${done?'done':active?'active':''}">
-        <div class="race-step-row">
-          <span class="dot"></span>
-          <span class="txt">${esc(t.name)} <span style="color:#5c657c">·</span> ${esc(t.sub)}${t.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
-          ${done ? '' : active ? `<button class="race-stepbtn" data-tool="${i}">Open dashboard →</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
-        </div>
-      </div>`;
-    }).join('')}
-    ${raceState.manualDoneAt ? `<div class="tf-hypothesis"><div class="lbl">Manual conclusion</div><p>After ${TOOLS.length} separate dashboards: rolled back the most recent deploy and pushed straight to production — no isolated test, no sandbox.</p></div>` : ''}
+    <p class="race-note">${raceState.manualDoneAt ? `All ${TOOLS.length} dashboards reviewed.` : `${raceState.manualIdx} / ${TOOLS.length} dashboards reviewed — next up: <b style="color:var(--ink)">${esc(next.name)}</b> · ${esc(next.sub)}.`}</p>
+    <div class="race-impact-mini">
+      <span>💸 ~$<span id="raceImpactDollars">${impact.dollars.toLocaleString()}</span> in lost checkouts so far</span>
+      <span>😠 ~<span id="raceImpactCustomers">${impact.customers}</span> customers still hitting the error</span>
+    </div>
+    <button class="race-cta" id="openMcBtn">${raceState.manualDoneAt?'Review the dashboards →':'Open Manual Engineer Console →'}</button>
+    ${raceState.manualDoneAt ? `<div class="tf-hypothesis" style="margin-top:16px"><div class="lbl">Manual conclusion</div><p>After ${TOOLS.length} separate dashboards: rolled back the most recent deploy and pushed straight to production — no isolated test, no sandbox.</p></div>` : ''}
   `;
 }
-function openManualTool(i){
-  if(!raceState.started || raceState.manualDoneAt) return;
-  if(i!==raceState.manualIdx) return;
-  raceState.openTool=i;
-  renderToolFull();
+function selectManualTool(i){
+  if(!raceState.started) return;
+  if(i>raceState.manualIdx) return;
+  mcState.selected=i;
+  renderManualConsole();
 }
-function closeManualTool(markDone){
-  const i=raceState.openTool;
-  raceState.openTool=null;
-  if(markDone && i===raceState.manualIdx){
-    raceState.manualIdx++;
-    if(raceState.manualIdx>=TOOLS.length) raceState.manualDoneAt=Date.now();
-  }
-  const ov=$('#toolfullOverlay'); if(ov){ ov.hidden=true; ov.innerHTML=''; ov.className='toolfull-overlay'; }
+function mcMarkReviewed(){
+  const i=mcState.selected;
+  if(i==null || i!==raceState.manualIdx || raceState.manualDoneAt) return;
+  raceState.manualIdx++;
+  if(raceState.manualIdx>=TOOLS.length){ raceState.manualDoneAt=Date.now(); mcState.selected=TOOLS.length-1; }
+  else mcState.selected=raceState.manualIdx;
+  renderManualConsole();
   renderRaceIfVisible();
 }
-function renderToolFull(){
-  const el=$('#toolfullOverlay'); if(!el) return;
-  const i=raceState.openTool;
-  if(i==null){ el.hidden=true; el.innerHTML=''; return; }
+function renderManualConsole(){
+  const el=$('#env-manual'); if(!el) return;
+  if(!raceState.started){
+    el.innerHTML=`<div class="mc-empty">No incident running yet.<br><br>Go to <b>⚡ Manual vs RemOps</b> and click <b>Start the race</b> — this console fills in with the same ${TOOLS.length} tools an on-call engineer actually has to open, one at a time, before ever reaching a hypothesis.</div>`;
+    return;
+  }
+  const impact=computeImpact();
+  const i = mcState.selected!=null ? mcState.selected : Math.min(raceState.manualIdx, TOOLS.length-1);
   const t=TOOLS[i];
-  const ms = raceState.startedAt ? Date.now()-raceState.startedAt : 0;
-  el.hidden=false;
-  el.className='toolfull-overlay'+(t.theme?' '+t.theme:'');
+  const doneAll = raceState.manualDoneAt!=null;
+  const isCurrentActive = i===raceState.manualIdx && !doneAll;
+  const nav=TOOLS.map((tool,idx)=>{
+    const done = idx<raceState.manualIdx;
+    const locked = idx>raceState.manualIdx;
+    const active = idx===i;
+    return `<button class="mc-navitem ${done?'done':''} ${active?'active':''} ${locked?'locked':''}" data-nav="${idx}" ${locked?'disabled':''}>
+      <span class="idx">${String(idx+1).padStart(2,'0')}</span>
+      <span class="dot"></span>
+      <span class="nm"><b>${esc(tool.name)}</b><span>${esc(tool.sub)}</span></span>
+    </button>`;
+  }).join('');
   el.innerHTML=`
-    <div class="toolfull-top">
-      <div class="toolfull-brand"><span class="toolfull-dot" style="background:${t.dot}"></span><span class="toolfull-name">${esc(t.name)}</span><span class="toolfull-sub">${esc(t.sub)}</span></div>
-      <div class="toolfull-spacer"></div>
-      <span class="toolfull-clock-lbl">Manual elapsed</span>
-      <span class="toolfull-clock" id="toolfullClock">${fmtRaceClock(ms)}</span>
-    </div>
-    <div class="toolfull-body"><div class="toolfull-inner">${t.full()}</div></div>
-    <div class="toolfull-foot">
-      <button class="tf-btn" id="tfBack">← Back to the race</button>
-      <button class="tf-btn primary" id="tfNext">Mark reviewed — ${i<TOOLS.length-1?'next tool':'continue'} →</button>
+    <div class="mc-shell">
+      <div class="mc-side">
+        <div class="mc-brand"><b>Manual Toolbox</b><span>${raceState.manualIdx}/${TOOLS.length} reviewed</span></div>
+        <div class="mc-navlist">${nav}</div>
+        <div class="mc-sidefoot">Incident ${state.incident?esc(state.incident.id):'—'}</div>
+      </div>
+      <div class="mc-main">
+        <div class="mc-topbar">
+          <div class="mc-clockblk"><div class="k">Manual elapsed</div><div class="v" id="mcClock">${fmtRaceClock(mcClockMs())}</div></div>
+          <div class="mc-impact">
+            <div class="item"><div class="k">Est. revenue lost</div><div class="v" id="mcImpactDollars">$${impact.dollars.toLocaleString()}</div></div>
+            <div class="item"><div class="k">Customers still failing</div><div class="v" id="mcImpactCustomers">${impact.customers}</div></div>
+          </div>
+        </div>
+        <div class="mc-content">
+          <div class="toolfull-overlay mc-embed${t.theme?' '+t.theme:''}">
+            <div class="toolfull-top">
+              <div class="toolfull-brand"><span class="toolfull-dot" style="background:${t.dot}"></span><span class="toolfull-name">${esc(t.name)}</span><span class="toolfull-sub">${esc(t.sub)}</span></div>
+            </div>
+            <div class="toolfull-body"><div class="toolfull-inner">${t.full()}</div></div>
+            <div class="toolfull-foot">
+              <span style="font:500 11px var(--sans);color:#5c657c">${doneAll?'All dashboards reviewed.':isCurrentActive?'Review this, then continue.':'Already reviewed — browsing back.'}</span>
+              ${isCurrentActive ? `<button class="tf-btn primary" id="mcNextBtn">Mark reviewed — ${i<TOOLS.length-1?'next tool':'form hypothesis'} →</button>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
-  const backBtn=$('#tfBack'); if(backBtn) backBtn.addEventListener('click', ()=>closeManualTool(false));
-  const nextBtn=$('#tfNext'); if(nextBtn) nextBtn.addEventListener('click', ()=>closeManualTool(true));
+  $$('.mc-navitem[data-nav]', el).forEach(b=>b.addEventListener('click', ()=>selectManualTool(+b.getAttribute('data-nav'))));
+  const nextBtn=$('#mcNextBtn'); if(nextBtn) nextBtn.addEventListener('click', mcMarkReviewed);
+  const restartBtn=$('#k8sRestartBtn'); if(restartBtn) restartBtn.addEventListener('click', ()=>{
+    raceState.k8sRestart='restarting';
+    renderManualConsole();
+    setTimeout(()=>{ raceState.k8sRestart='failed'; renderManualConsole(); }, 3500);
+  });
 }
 
 /* Mirrors the real RemOps console, phase by phase, so both columns
@@ -3259,7 +3360,7 @@ function renderRace(){
     </div>
   `;
   const startBtn=$('#raceStartBtn'); if(startBtn) startBtn.addEventListener('click', startRace);
-  $$('.race-stepbtn[data-tool]', el).forEach(b=>b.addEventListener('click', ()=>openManualTool(+b.getAttribute('data-tool'))));
+  const openMc=$('#openMcBtn'); if(openMc) openMc.addEventListener('click', ()=>switchEnv('manual'));
   const authBtn=$('#raceAuthBtn'); if(authBtn) authBtn.addEventListener('click', authorizeRemediation);
   if(prevManualScroll!=null){ const mb=$('#raceManualBody'); if(mb) mb.scrollTop=prevManualScroll; }
   if(prevRemopsScroll!=null){ const rb=$('#raceRemopsBody'); if(rb) rb.scrollTop=prevRemopsScroll; }
@@ -3269,23 +3370,35 @@ function startRace(){
   if(state.phase!=='normal') resetDemo();
   raceState.started=true;
   raceState.startedAt=Date.now();
-  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.openTool=null;
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.k8sRestart='idle';
   raceState.remopsStartedAt=Date.now(); raceState.remopsDoneAt=null;
+  mcState.selected=0;
   startIncident();
   renderRace();
+  renderManualConsoleIfVisible();
 }
 function tickRace(){
   if(!raceState.started) return;
   if(state.phase==='resolved' && !raceState.remopsDoneAt){
     raceState.remopsDoneAt = (state.incident && state.incident.resolvedAt) ? state.incident.resolvedAt.getTime() : Date.now();
     renderRaceIfVisible();
+    renderManualConsoleIfVisible();
   }
-  const tc=$('#toolfullClock');
-  if(tc && raceState.startedAt) tc.textContent = fmtRaceClock(Date.now()-raceState.startedAt);
+  if(mcIsActive() && !raceState.manualDoneAt){
+    const mcc=$('#mcClock'); if(mcc) mcc.textContent=fmtRaceClock(mcClockMs());
+    const impact=computeImpact();
+    const md=$('#mcImpactDollars'); if(md) md.textContent='$'+impact.dollars.toLocaleString();
+    const mcu=$('#mcImpactCustomers'); if(mcu) mcu.textContent=impact.customers;
+  }
   if(!raceIsActive()) return;
   const mc=$('#raceManualClock'), rc=$('#raceRemopsClock');
   if(mc) mc.textContent = fmtRaceClock((raceState.manualDoneAt?raceState.manualDoneAt:Date.now())-raceState.startedAt);
   if(rc) rc.textContent = fmtRaceClock((raceState.remopsDoneAt?raceState.remopsDoneAt:Date.now())-raceState.startedAt);
+  if(!raceState.manualDoneAt){
+    const impact2=computeImpact();
+    const rid=$('#raceImpactDollars'); if(rid) rid.textContent=impact2.dollars.toLocaleString();
+    const ric=$('#raceImpactCustomers'); if(ric) ric.textContent=impact2.customers;
+  }
 }
 
 /* ============================================================
@@ -3297,6 +3410,7 @@ function switchEnv(env){
   $$('.envbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-env')===env));
   renderCC();
   if(env==='race') renderRace();
+  if(env==='manual') renderManualConsole();
 }
 
 $('#envSwitch').addEventListener('click', e=>{
