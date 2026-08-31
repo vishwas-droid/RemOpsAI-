@@ -868,7 +868,8 @@ table.k8s td:first-child{color:var(--ink)}
 .race-col.remops .race-clock.done{color:var(--ok)}
 .race-col-body{padding:14px 16px;flex:1;overflow-y:auto;max-height:520px}
 .race-note{font:400 11.5px/1.6 var(--sans);color:#5c657c;font-style:italic;margin:0 0 12px}
-.race-step{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #232c40;border-radius:9px;background:#0d1119;margin-bottom:8px}
+.race-step{padding:10px 12px;border:1px solid #232c40;border-radius:9px;background:#0d1119;margin-bottom:8px}
+.race-step-row{display:flex;align-items:center;gap:11px}
 .race-step.done{border-color:rgba(34,199,122,.35);background:rgba(34,199,122,.06)}
 .race-step.active{border-color:var(--warn);box-shadow:0 0 0 1px rgba(245,166,35,.2)}
 .race-step .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#3a4666}
@@ -901,6 +902,51 @@ table.k8s td:first-child{color:var(--ink)}
 .race-result .rrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1c2334;font:500 13px var(--sans);color:#c6cce0}
 .race-result .rrow:last-child{border-bottom:none}
 .race-result .rrow b{color:var(--ink);font:700 14px var(--mono)}
+
+/* ---- mock tool screens the manual side has to open ---- */
+.tool-screen{border:1px solid #232c40;border-radius:9px;overflow:hidden;margin-top:9px;background:#0b0f16}
+.tool-bar{display:flex;align-items:center;gap:9px;padding:7px 11px;background:#12182e;border-bottom:1px solid #1c2334}
+.tool-dots{display:flex;gap:4px}
+.tool-dots span{width:6px;height:6px;border-radius:50%;background:#3a4666;display:inline-block}
+.tool-name{font:600 10px var(--mono);letter-spacing:.07em;color:#8b93ab}
+.tool-body{padding:12px 14px;font:400 12px var(--sans);color:#c6cce0}
+.pd-sev{display:inline-block;padding:3px 8px;border-radius:5px;background:var(--danger);color:#fff;font:700 10px var(--mono);letter-spacing:.08em;margin-bottom:9px}
+.pd-title{font:700 14px var(--sans);color:var(--ink);margin-bottom:4px}
+.pd-meta{font:400 11px var(--mono);color:#5c657c;margin-bottom:11px}
+.pd-ack{padding:7px 14px;border-radius:7px;border:1px solid var(--danger);background:rgba(240,71,90,.1);color:var(--danger);font:700 10.5px var(--sans);letter-spacing:.03em}
+.dd-search{font:500 11px var(--mono);color:#8b93ab;padding:6px 10px;background:#0d1119;border:1px solid #232c40;border-radius:6px;margin-bottom:9px}
+.dd-logline{font:400 10.5px var(--mono);padding:4px 8px;border-radius:5px;margin-bottom:3px}
+.dd-logline.err{background:var(--danger-soft);color:#ffb0ba}
+.dd-logline.warn{background:var(--warn-soft);color:#f5c97a}
+.dd-note{font:400 11px var(--sans);color:#5c657c;font-style:italic;margin-top:7px}
+.dd-chartlbl{font:600 9.5px var(--mono);color:#8b93ab;letter-spacing:.05em;margin-bottom:3px}
+.dd-chart{height:52px;margin-bottom:9px}
+.dd-chart svg{width:100%;height:100%;display:block}
+.trace-mini-row{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.trace-mini-lbl{width:170px;flex:none;font:500 10px var(--mono);color:#8b93ab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace-mini-bar{height:10px;background:#161d2b;border-radius:3px;flex:1;position:relative;overflow:hidden}
+.trace-mini-bar span{position:absolute;top:0;bottom:0;left:0;background:var(--accent);border-radius:3px}
+.trace-mini-bar.slow span{background:var(--danger)}
+.k8s-mini-row{display:flex;justify-content:space-between;font:400 11px var(--mono);padding:5px 0;border-bottom:1px solid #1c2334}
+.k8s-mini-row:last-child{border-bottom:none}
+.k8s-status{font:600 9.5px var(--mono);letter-spacing:.04em}
+.k8s-status.crash{color:var(--danger)}
+.k8s-status.run{color:var(--ok)}
+.db-gauge-lbl{font:700 13px var(--mono);color:var(--danger);margin-bottom:7px}
+.db-gauge-track{height:18px;background:#0d1119;border:1px solid #232c40;border-radius:5px;overflow:hidden;margin-bottom:8px}
+.db-gauge-fill{height:100%;background:var(--danger)}
+.gh-mini{border:1px solid #232c40;border-radius:7px;padding:10px 12px;background:#0d1119}
+.gh-mini .who{font:500 10.5px var(--mono);color:#8b93ab}
+.gh-mini .msg{font:500 12.5px var(--sans);color:var(--ink);margin:5px 0}
+.gh-mini .diff{font:600 10.5px var(--mono)}
+.gh-mini .diff .add{color:var(--ok)}
+.gh-mini .diff .del{color:var(--danger);margin-left:8px}
+.term-mini{font:400 11px var(--mono);color:#c6cce0;background:#0d1119;border:1px solid #232c40;border-radius:7px;padding:11px 13px;white-space:pre-wrap;line-height:1.7}
+.term-mini .prompt{color:var(--ok)}
+.tool-screen.rops{border-color:#1c3a3a}
+.tool-screen.rops .tool-bar{background:#0f2222}
+.rops-t{font:700 13px var(--sans);color:var(--ink);margin-bottom:4px}
+.rops-d{font:400 12px/1.55 var(--sans);color:#c6cce0}
 </style>
 </head>
 <body>
@@ -1048,6 +1094,7 @@ function pushSession(text, ok){
 function pushReasoning(text){
   state.reasoning.push({t:fmtTime(now()), d:text});
   if(state.rops.activeSection==='investigation') renderActiveConsole();
+  renderRaceIfVisible();
 }
 
 /* ============================================================
@@ -2690,15 +2737,75 @@ function wireConsoleSection(sec){
    the manual side has to be clicked through step by step, the
    same as a human actually would — nothing here is scripted pacing.
    ============================================================ */
+/* Small illustrative mock screens for the tools a manual on-call
+   engineer would actually have to open — not live product metrics,
+   just what it looks like to piece this together by hand. */
+function toolScreen(name, bodyHtml){
+  return `<div class="tool-screen"><div class="tool-bar"><span class="tool-dots"><span></span><span></span><span></span></span><span class="tool-name">${esc(name)}</span></div><div class="tool-body">${bodyHtml}</div></div>`;
+}
+function miniSpikeSvg(color){
+  return `<svg viewBox="0 0 200 48" preserveAspectRatio="none"><polyline points="0,40 30,38 55,36 70,34 90,10 120,8 150,14 175,20 200,22" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
+}
+function traceMiniRow(label,pct,slow){
+  return `<div class="trace-mini-row"><span class="trace-mini-lbl">${esc(label)}</span><div class="trace-mini-bar${slow?' slow':''}"><span style="width:${pct}%"></span></div></div>`;
+}
+function k8sMiniRow(name,status){
+  const map={run:['RUNNING','run'],restart:['RESTARTED','crash'],crash:['CRASHLOOP','crash']};
+  const [txt,cls]=map[status];
+  return `<div class="k8s-mini-row"><span>${esc(name)}</span><span class="k8s-status ${cls}">${txt}</span></div>`;
+}
+
 const MANUAL_STEPS=[
-  {label:'Open the paging alert and acknowledge it', sub:'checkout-service error rate paging on-call'},
-  {label:'Open the logs dashboard and search for errors', sub:'grep across checkout-service, order-service, payment-service'},
-  {label:'Open the metrics dashboard and check error rate / latency', sub:'cross-reference against the alert'},
-  {label:'Open the tracing tool and follow one slow request', sub:'checkout → order → payment → postgres'},
-  {label:'Open the Kubernetes dashboard and check pod health', sub:'pods restarting — cause, or symptom?'},
-  {label:'Open the database dashboard and check connection pool', sub:'cross-reference saturation timing against the trace'},
-  {label:'Open the deploy history and find what shipped recently', sub:'read the diff, form a hypothesis'},
-  {label:'Write the fix and push it straight to production', sub:'no isolated test — hoping it works', risky:true},
+  {label:'Open the paging alert and acknowledge it', sub:'checkout-service error rate paging on-call', tool:'PagerDuty · Incident #8823',
+    body:()=>`
+      <div class="pd-sev">SEV-1</div>
+      <div class="pd-title">checkout-service — High error rate</div>
+      <div class="pd-meta">Triggered just now · Service: checkout-service · Escalation: On-Call Primary</div>
+      <button class="pd-ack">Acknowledged</button>`},
+  {label:'Open the logs dashboard and search for errors', sub:'grep across checkout-service, order-service, payment-service', tool:'Datadog · Log Explorer',
+    body:()=>`
+      <div class="dd-search">service:(checkout-service OR order-service OR payment-service) status:error</div>
+      <div class="dd-logline err">ERROR order-service — context deadline exceeded calling payment-service</div>
+      <div class="dd-logline err">ERROR order-service — could not acquire db connection: pool exhausted (120/120 in use)</div>
+      <div class="dd-logline warn">WARN checkout-service — p99 latency exceeded 2000ms threshold</div>
+      <div class="dd-note">1,842 matching lines across 6 pods — which one is actually the cause?</div>`},
+  {label:'Open the metrics dashboard and check error rate / latency', sub:'cross-reference against the alert', tool:'Datadog · Metrics Explorer',
+    body:()=>`
+      <div class="dd-chartlbl">checkout.error_rate</div>
+      <div class="dd-chart">${miniSpikeSvg('#f0475a')}</div>
+      <div class="dd-chartlbl">checkout.p95_latency</div>
+      <div class="dd-chart">${miniSpikeSvg('#f5a623')}</div>`},
+  {label:'Open the tracing tool and follow one slow request', sub:'checkout → order → payment → postgres', tool:'Datadog · APM Traces',
+    body:()=>`
+      ${traceMiniRow('checkout-api', 18, false)}
+      ${traceMiniRow('order-service', 22, false)}
+      ${traceMiniRow('payment-service', 34, false)}
+      ${traceMiniRow('postgres · connection.acquire', 92, true)}`},
+  {label:'Open the Kubernetes dashboard and check pod health', sub:'pods restarting — cause, or symptom?', tool:'Kubernetes · checkout-service',
+    body:()=>`
+      ${k8sMiniRow('checkout-service-7f9d4c-2k9x','restart')}
+      ${k8sMiniRow('checkout-service-7f9d4c-x81m','run')}
+      ${k8sMiniRow('checkout-service-7f9d4c-qw3v','run')}
+      ${k8sMiniRow('checkout-service-7f9d4c-n0lz','crash')}`},
+  {label:'Open the database dashboard and check connection pool', sub:'cross-reference saturation timing against the trace', tool:'RDS Monitor · postgres-primary',
+    body:()=>`
+      <div class="db-gauge-lbl">120 / 120 connections in use</div>
+      <div class="db-gauge-track"><div class="db-gauge-fill" style="width:100%"></div></div>
+      <div class="dd-note">Pool is maxed — but is this the cause, or something downstream?</div>`},
+  {label:'Open the deploy history and find what shipped recently', sub:'read the diff, form a hypothesis', tool:'GitHub · checkout-service',
+    body:()=>`
+      <div class="gh-mini">
+        <div class="who">a13f9c2 · j.romero · 8 minutes ago</div>
+        <div class="msg">checkout-service v2.114.0 — connection handling refactor</div>
+        <div class="diff"><span class="add">+42</span><span class="del">−17</span></div>
+      </div>
+      <div class="dd-note">Best guess: this deploy is related — not certain, but it's the most recent change.</div>`},
+  {label:'Write the fix and push it straight to production', sub:'no isolated test — hoping it works', risky:true, tool:'Terminal',
+    body:()=>`
+      <div class="term-mini"><span class="prompt">$</span> git revert a13f9c2
+<span class="prompt">$</span> git push origin main --force-with-lease
+<span class="prompt">$</span> kubectl rollout restart deployment/checkout-service -n prod</div>
+      <div class="dd-note">Pushed straight to production — no staging test, no sandbox. Just watching the dashboards and hoping.</div>`},
 ];
 const raceState={
   started:false, startedAt:null,
@@ -2713,26 +2820,54 @@ function raceIsActive(){ const el=$('#env-race'); return !!(el && el.classList.c
 function renderRaceIfVisible(){ if(raceIsActive()) renderRace(); }
 
 function raceManualBody(){
-  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — click through every step yourself, the same as an on-call engineer actually has to.</p>`;
+  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — click through every step yourself, opening the same tools an on-call engineer actually has to.</p>`;
   return `
-    <p class="race-note">Click each step in order.</p>
+    <p class="race-note">Click each step — it opens the real tool you'd actually have to check.</p>
     ${MANUAL_STEPS.map((st,i)=>{
       const done = i<raceState.manualIdx;
       const active = i===raceState.manualIdx && !raceState.manualDoneAt;
       const busy = active && raceState.manualBusy;
       return `<div class="race-step ${done?'done':active?'active':''}">
-        <span class="dot"></span>
-        <span class="txt">${esc(st.label)}<span class="sub">${esc(st.sub)}</span>${st.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
-        ${done ? '' : active ? `<button class="race-stepbtn" data-step="${i}" ${busy?'disabled':''}>${busy?'Working…':'Do it'}</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
+        <div class="race-step-row">
+          <span class="dot"></span>
+          <span class="txt">${esc(st.label)}<span class="sub">${esc(st.sub)}</span>${st.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
+          ${done ? '' : active ? `<button class="race-stepbtn" data-step="${i}" ${busy?'disabled':''}>${busy?'Working…':'Do it'}</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
+        </div>
+        ${done ? toolScreen(st.tool, st.body()) : ''}
       </div>`;
     }).join('')}
   `;
+}
+
+/* Mirrors the real RemOps console, phase by phase, so both columns
+   read the same way: what the tool shows, right now, through to
+   final remediation. */
+const RACE_PHASE_PANEL={
+  incident:{t:'Correlating signals automatically', d:'Pulling logs, metrics, traces, Kubernetes, database and deploy history — no human has looked at anything yet.'},
+  detecting:{t:'P1 declared automatically', d:'Cross-signal anomaly correlation triggered — checkout error rate, DB pool and payment timeouts, all at once.'},
+  investigating:{t:'Investigating — reasoning live', d:null},
+  rootcause:{t:'Root cause identified', d:null},
+  remediation_ready:{t:'Plan ready — awaiting authorization', d:'6-step rollback plan generated. Nothing touches production without a human saying so.'},
+  sandbox_test:{t:'Validating in an isolated sandbox', d:'Testing the identical rollback against a private copy of checkout-service before production.'},
+  sandbox_failed:{t:'Sandbox failed — auto-rolled back', d:null},
+  remediating:{t:'Remediating production', d:'Sandbox-validated — rolling checkout-service back to the last known healthy release.'},
+  resolved:{t:'Resolved', d:'checkout-service is back on v2.113.2, verified by a completed customer order.'},
+};
+function raceRemopsPanel(){
+  if(state.phase==='normal') return '';
+  const cfg=RACE_PHASE_PANEL[state.phase]; if(!cfg) return '';
+  let d=cfg.d;
+  if(state.phase==='investigating') d = state.reasoning.length ? state.reasoning[state.reasoning.length-1].d : 'Reasoning through the signals…';
+  else if(state.phase==='rootcause') d = state.confidence+'% confidence — checkout-service deploy v2.114.0 linked to connection-pool exhaustion.';
+  else if(state.phase==='sandbox_failed') d = state.sandbox.failReason || 'Auto-rolled back and retrying.';
+  return `<div class="tool-screen rops"><div class="tool-bar"><span class="tool-dots"><span></span><span></span><span></span></span><span class="tool-name">RemOpsAI Console</span></div><div class="tool-body"><div class="rops-t">${esc(cfg.t)}</div><div class="rops-d">${esc(d||'')}</div></div></div>`;
 }
 function raceRemopsBody(){
   if(!raceState.started) return `<p class="race-note">RemOps starts the moment the race begins — no clicking required until it asks for authorization.</p>`;
   const tl=state.timeline;
   const needsAuth = state.phase==='remediation_ready';
   return `
+    ${raceRemopsPanel()}
     ${needsAuth ? `<div class="race-authbar"><p>Fix is ready. RemOps is waiting on a human to authorize it before touching anything.</p><button class="race-authbtn" id="raceAuthBtn">Authorize Remediation</button></div>` : ''}
     <div class="race-feed">
       ${tl.length ? tl.slice().reverse().map(e=>`<div class="ln"><span class="t">${e.t}</span>${esc(e.d)}</div>`).join('') : `<div class="ln">Waiting for the first signal…</div>`}
@@ -2741,6 +2876,8 @@ function raceRemopsBody(){
 }
 function renderRace(){
   const el=$('#env-race'); if(!el) return;
+  const prevManualScroll=$('#raceManualBody')?.scrollTop;
+  const prevRemopsScroll=$('#raceRemopsBody')?.scrollTop;
   const manualDone = raceState.manualDoneAt!=null;
   const remopsDone = raceState.remopsDoneAt!=null;
   const manualMs = raceState.started ? (manualDone?raceState.manualDoneAt:Date.now())-raceState.startedAt : 0;
@@ -2783,6 +2920,8 @@ function renderRace(){
   const startBtn=$('#raceStartBtn'); if(startBtn) startBtn.addEventListener('click', startRace);
   $$('.race-stepbtn[data-step]', el).forEach(b=>b.addEventListener('click', ()=>doManualStep(+b.getAttribute('data-step'))));
   const authBtn=$('#raceAuthBtn'); if(authBtn) authBtn.addEventListener('click', authorizeRemediation);
+  if(prevManualScroll!=null){ const mb=$('#raceManualBody'); if(mb) mb.scrollTop=prevManualScroll; }
+  if(prevRemopsScroll!=null){ const rb=$('#raceRemopsBody'); if(rb) rb.scrollTop=prevRemopsScroll; }
 }
 function startRace(){
   if(raceState.started && !(raceState.manualDoneAt && raceState.remopsDoneAt)) return;
