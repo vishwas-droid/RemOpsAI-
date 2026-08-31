@@ -833,39 +833,9 @@ table.k8s td:first-child{color:var(--ink)}
 }
 
 /* ============================================================
-   ROPS ACTIVITY WIDGET — surfaces on the storefront itself the
-   instant checkout fails, so RemOps visibly starts working without
-   anyone having to switch tabs to notice.
+   IMPACT FLASH — a brief red pulse across the storefront the
+   instant checkout breaks.
    ============================================================ */
-.ropsact{
-  position:fixed;right:20px;bottom:20px;width:340px;max-height:420px;z-index:900;
-  background:#0d1119;border:1px solid #232c40;border-radius:12px;
-  box-shadow:0 24px 60px -20px rgba(0,0,0,.65);
-  display:flex;flex-direction:column;overflow:hidden;font-family:var(--sans);
-  animation:ropsactIn .35s cubic-bezier(.2,.9,.3,1.2);
-}
-.ropsact[hidden]{display:none}
-@keyframes ropsactIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.ropsact-head{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid #1c2334;background:linear-gradient(180deg,#12182e,#0d1119)}
-.ropsact-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none;animation:ropsactPulse 1.2s ease-in-out infinite}
-.ropsact-dot.ok{background:var(--ok);animation:none}
-@keyframes ropsactPulse{0%,100%{opacity:1}50%{opacity:.3}}
-.ropsact-title{font:700 12px var(--sans);color:var(--ink);flex:1;min-width:0}
-.ropsact-status{font:600 9.5px var(--mono);color:var(--warn);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
-.ropsact-feed{overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:7px;max-height:250px}
-.ropsact-feed .ln{font:400 11.5px/1.5 var(--sans);color:#8b93ab;padding-bottom:7px;border-bottom:1px solid #1c2334}
-.ropsact-feed .ln:last-child{border-bottom:none;padding-bottom:0}
-.ropsact-feed .ln:first-child{color:var(--ink);font-weight:500}
-.ropsact-feed .ln .t{font:600 9.5px var(--mono);color:#5c657c;margin-right:7px}
-.ropsact-cta{margin:0;padding:11px;border:none;border-top:1px solid #1c2334;background:#12182450;color:var(--accent-2);font:700 11.5px var(--sans);cursor:pointer;flex:none}
-.ropsact-cta:hover{background:#161d2b}
-.ropsact-ladder{display:flex;gap:4px;padding:11px 14px 0}
-.ropsact-lstep{flex:1;height:4px;border-radius:2px;background:#232c40}
-.ropsact-lstep.done{background:var(--ok)}
-.ropsact-lstep.active{background:var(--warn);animation:ropsactLadderSweep 1.3s ease-in-out infinite}
-@keyframes ropsactLadderSweep{0%,100%{opacity:1}50%{opacity:.4}}
-.ropsact-feed .ln:first-child{animation:ropsactLineIn .6s ease}
-@keyframes ropsactLineIn{0%{background:rgba(76,141,255,.22);transform:translateX(-3px)}100%{background:transparent;transform:translateX(0)}}
 .impact-flash{
   position:fixed;inset:0;z-index:1500;pointer-events:none;
   background:radial-gradient(circle at 50% 38%, rgba(240,71,90,.4), rgba(240,71,90,0) 68%);
@@ -873,8 +843,7 @@ table.k8s td:first-child{color:var(--ink)}
 }
 .impact-flash[hidden]{display:none}
 @keyframes impactFlash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
-@media (max-width:480px){.ropsact{right:10px;left:10px;bottom:10px;width:auto}}
-@media (prefers-reduced-motion: reduce){.ropsact{animation:none}.ropsact-dot{animation:none}.ropsact-lstep.active{animation:none}.ropsact-feed .ln:first-child{animation:none}.impact-flash{animation:none;display:none}}
+@media (prefers-reduced-motion: reduce){.impact-flash{animation:none;display:none}}
 
 /* ============================================================
    DOCUMENTATION CONSOLE — its own tab, sidebar + reading pane,
@@ -941,7 +910,6 @@ table.k8s td:first-child{color:var(--ink)}
 
 <div class="mer-toast" id="toast"></div>
 
-<div class="ropsact" id="ropsActivity" hidden></div>
 <div class="impact-flash" id="impactFlash" hidden></div>
 
 <div class="ccbar" id="ccBar" hidden>
@@ -987,7 +955,6 @@ const BROKEN_PHASES=new Set(['incident','detecting','investigating','rootcause',
 
 const state = {
   phase:'normal',
-  remopsActive:false,
   timers:[],
   heartbeat:null,
   incident:null, // {id, severity, detectedAt, resolvedAt}
@@ -1055,42 +1022,6 @@ function pushLog(level, svc, msg, tsDate){
 function pushTimeline(text){
   state.timeline.push({t:fmtTime(now()), d:text});
   if(state.rops.activeSection==='investigation' || state.rops.activeSection==='command') renderActiveConsole();
-  renderStoreActivity();
-}
-/* Live "RemOps is already on it" widget on the storefront itself —
-   the instant checkout fails, this surfaces without anyone having
-   to switch tabs, so the autonomous response is felt immediately. */
-const ROPS_ACTIVITY_STATUS={
-  incident:'Correlating signals…', detecting:'P1 declared', investigating:'Investigating…',
-  rootcause:'Root cause found', remediation_ready:'Awaiting authorization', sandbox_test:'Testing in sandbox',
-  sandbox_failed:'Sandbox failed — retrying', remediating:'Remediating…', resolved:'Resolved',
-};
-function ropsActLadderHtml(){
-  const cur=ladderIndex();
-  if(cur<0) return '';
-  return `<div class="ropsact-ladder">${LADDER.map((st,i)=>`
-    <span class="ropsact-lstep ${i<cur?'done':i===cur?'active':''}" title="${esc(st.k)}"></span>`).join('')}</div>`;
-}
-function renderStoreActivity(){
-  const el=$('#ropsActivity'); if(!el) return;
-  const onStore = $('#env-store')?.classList.contains('active');
-  if(state.phase==='normal' || !onStore || !state.remopsActive){ el.hidden=true; el.innerHTML=''; return; }
-  el.hidden=false;
-  const done = state.phase==='resolved';
-  const feedItems = state.timeline.slice().reverse().slice(0,8);
-  el.innerHTML=`
-    <div class="ropsact-head">
-      <span class="ropsact-dot ${done?'ok':''}"></span>
-      <span class="ropsact-title">RemOpsAI — Autonomous Response</span>
-      <span class="ropsact-status">${esc(ROPS_ACTIVITY_STATUS[state.phase]||'')}</span>
-    </div>
-    ${ropsActLadderHtml()}
-    <div class="ropsact-feed">
-      ${feedItems.length ? feedItems.map(e=>`<div class="ln"><span class="t">${e.t}</span>${esc(e.d)}</div>`).join('') : `<div class="ln">Pulling signals across the stack…</div>`}
-    </div>
-    <button class="ropsact-cta" id="ropsActCta">Open full console →</button>
-  `;
-  const cta=$('#ropsActCta'); if(cta) cta.addEventListener('click', ()=>switchEnv('rops'));
 }
 function triggerImpactFlash(){
   const fl=$('#impactFlash'); if(!fl) return;
@@ -1130,7 +1061,6 @@ function setPhase(p){
   renderActiveConsole();
   renderStoreCheckoutIfVisible();
   updateTriggerBtn();
-  renderStoreActivity();
 }
 
 function startIncident(){
@@ -1148,11 +1078,9 @@ function startIncident(){
   setPhase('incident');
 
   // A deliberate quiet beat before RemOps visibly reacts — enough time for
-  // whoever's presenting to narrate the failure before the console (and the
-  // storefront activity widget) spring into action.
+  // whoever's presenting to narrate the failure before the console springs
+  // into action.
   schedule(()=>{
-    state.remopsActive=true;
-    renderStoreActivity();
     pushLog('WARN','checkout-service','p99 latency exceeded 2000ms threshold on /v1/checkout/place-order');
     pushLog('ERROR','order-service','context deadline exceeded calling payment-service');
     flipPod(2,'restart');
@@ -1435,7 +1363,6 @@ function updateTriggerBtn(){}
 function resetDemo(){
   clearTimers();
   state.phase='normal';
-  state.remopsActive=false;
   state.incident=null;
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
@@ -1451,7 +1378,7 @@ function resetDemo(){
   Object.values(state.metrics).forEach(m=>m.hist=[]);
   store.view='home'; store.selectedProduct=null; store.cart=[];
   updateStatusPill(); updateTriggerBtn();
-  renderStore(); renderActiveConsole(); renderStoreActivity();
+  renderStore(); renderActiveConsole();
 }
 
 /* ============================================================
@@ -2987,7 +2914,6 @@ function switchEnv(env){
   $('#env-'+env).classList.add('active');
   $$('.envbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-env')===env));
   renderCC();
-  renderStoreActivity();
   if(env==='docs') renderDocsConsole();
 }
 
