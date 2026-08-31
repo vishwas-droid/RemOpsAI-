@@ -859,8 +859,22 @@ table.k8s td:first-child{color:var(--ink)}
 .ropsact-feed .ln .t{font:600 9.5px var(--mono);color:#5c657c;margin-right:7px}
 .ropsact-cta{margin:0;padding:11px;border:none;border-top:1px solid #1c2334;background:#12182450;color:var(--accent-2);font:700 11.5px var(--sans);cursor:pointer;flex:none}
 .ropsact-cta:hover{background:#161d2b}
+.ropsact-ladder{display:flex;gap:4px;padding:11px 14px 0}
+.ropsact-lstep{flex:1;height:4px;border-radius:2px;background:#232c40}
+.ropsact-lstep.done{background:var(--ok)}
+.ropsact-lstep.active{background:var(--warn);animation:ropsactLadderSweep 1.3s ease-in-out infinite}
+@keyframes ropsactLadderSweep{0%,100%{opacity:1}50%{opacity:.4}}
+.ropsact-feed .ln:first-child{animation:ropsactLineIn .6s ease}
+@keyframes ropsactLineIn{0%{background:rgba(76,141,255,.22);transform:translateX(-3px)}100%{background:transparent;transform:translateX(0)}}
+.impact-flash{
+  position:fixed;inset:0;z-index:1500;pointer-events:none;
+  background:radial-gradient(circle at 50% 38%, rgba(240,71,90,.4), rgba(240,71,90,0) 68%);
+  animation:impactFlash .7s ease-out;
+}
+.impact-flash[hidden]{display:none}
+@keyframes impactFlash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
 @media (max-width:480px){.ropsact{right:10px;left:10px;bottom:10px;width:auto}}
-@media (prefers-reduced-motion: reduce){.ropsact{animation:none}.ropsact-dot{animation:none}}
+@media (prefers-reduced-motion: reduce){.ropsact{animation:none}.ropsact-dot{animation:none}.ropsact-lstep.active{animation:none}.ropsact-feed .ln:first-child{animation:none}.impact-flash{animation:none;display:none}}
 
 </style>
 </head>
@@ -885,6 +899,7 @@ table.k8s td:first-child{color:var(--ink)}
 <div class="mer-toast" id="toast"></div>
 
 <div class="ropsact" id="ropsActivity" hidden></div>
+<div class="impact-flash" id="impactFlash" hidden></div>
 
 <div class="ccbar" id="ccBar" hidden>
   <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
@@ -1006,6 +1021,12 @@ const ROPS_ACTIVITY_STATUS={
   rootcause:'Root cause found', remediation_ready:'Awaiting authorization', sandbox_test:'Testing in sandbox',
   sandbox_failed:'Sandbox failed — retrying', remediating:'Remediating…', resolved:'Resolved',
 };
+function ropsActLadderHtml(){
+  const cur=ladderIndex();
+  if(cur<0) return '';
+  return `<div class="ropsact-ladder">${LADDER.map((st,i)=>`
+    <span class="ropsact-lstep ${i<cur?'done':i===cur?'active':''}" title="${esc(st.k)}"></span>`).join('')}</div>`;
+}
 function renderStoreActivity(){
   const el=$('#ropsActivity'); if(!el) return;
   const onStore = $('#env-store')?.classList.contains('active');
@@ -1019,12 +1040,19 @@ function renderStoreActivity(){
       <span class="ropsact-title">RemOpsAI — Autonomous Response</span>
       <span class="ropsact-status">${esc(ROPS_ACTIVITY_STATUS[state.phase]||'')}</span>
     </div>
+    ${ropsActLadderHtml()}
     <div class="ropsact-feed">
       ${feedItems.length ? feedItems.map(e=>`<div class="ln"><span class="t">${e.t}</span>${esc(e.d)}</div>`).join('') : `<div class="ln">Pulling signals across the stack…</div>`}
     </div>
     <button class="ropsact-cta" id="ropsActCta">Open full console →</button>
   `;
   const cta=$('#ropsActCta'); if(cta) cta.addEventListener('click', ()=>switchEnv('rops'));
+}
+function triggerImpactFlash(){
+  const fl=$('#impactFlash'); if(!fl) return;
+  fl.hidden=false;
+  clearTimeout(fl._t);
+  fl._t=setTimeout(()=>{ fl.hidden=true; }, 700);
 }
 function pushSession(text, ok){
   state.sessions.unshift({sid:'#'+(8800+Math.floor(Math.random()*90)), t:text, ok, ts:fmtTime(now())});
@@ -1060,6 +1088,7 @@ function setPhase(p){
 
 function startIncident(){
   if(state.phase!=='normal') return;
+  triggerImpactFlash();
   state.incident={ id:'INC-'+(2100+Math.floor(Math.random()*800)), severity:'P1', detectedAt:null, resolvedAt:null };
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
