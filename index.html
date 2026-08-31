@@ -919,8 +919,8 @@ function svgPoints(hist,w,h,min,max){
 /* ============================================================
    GLOBAL STATE
    ============================================================ */
-const PHASES=['normal','incident','detecting','investigating','rootcause','remediation_ready','remediating','resolved'];
-const BROKEN_PHASES=new Set(['incident','detecting','investigating','rootcause','remediation_ready','remediating']);
+const PHASES=['normal','incident','detecting','investigating','rootcause','remediation_ready','sandbox_test','sandbox_failed','remediating','resolved'];
+const BROKEN_PHASES=new Set(['incident','detecting','investigating','rootcause','remediation_ready','sandbox_test','sandbox_failed','remediating']);
 
 const state = {
   phase:'normal',
@@ -939,6 +939,15 @@ const state = {
     {key:'errorfall', label:'HTTP 500 rate falling', done:false, ts:null},
     {key:'orders', label:'Confirm successful customer orders', done:false, ts:null},
   ],
+  sandboxSteps:[
+    {key:'provision', label:'Provision isolated sandbox namespace (checkout-service v2.113.2)', done:false, ts:null},
+    {key:'seed', label:'Seed sandbox database from anonymized production snapshot', done:false, ts:null},
+    {key:'replay', label:'Replay 500 production checkout requests as synthetic traffic', done:false, ts:null},
+    {key:'compare_err', label:'Compare sandbox error rate vs. production baseline', done:false, ts:null},
+    {key:'compare_lat', label:'Compare sandbox p95 latency vs. production baseline', done:false, ts:null},
+    {key:'decision', label:'Pass/fail decision — promote or auto-rollback', done:false, ts:null},
+  ],
+  sandbox:{status:'idle', attempts:0, failReason:null},
   authorized:false,
   logs:[],
   pods:[
@@ -1012,6 +1021,8 @@ function startIncident(){
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
   state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
+  state.sandboxSteps.forEach(s=>{s.done=false; s.ts=null;});
+  state.sandbox={status:'idle', attempts:0, failReason:null};
   state.failedCheckoutAttempts=0;
 
   setPhase('incident');
@@ -1124,8 +1135,66 @@ function animateConfidence(target){
 function authorizeRemediation(){
   if(state.phase!=='remediation_ready') return;
   state.authorized=true;
+  runSandboxValidation();
+}
+
+/* Before anything touches production, RemOps replays the same fix against an
+   isolated sandbox copy of checkout-service. A failed sandbox run is torn
+   down automatically — production is only ever touched after a pass. */
+function runSandboxValidation(){
+  setPhase('sandbox_test');
+  state.sandbox.attempts++;
+  state.sandbox.status='running';
+  state.sandbox.failReason=null;
+  state.sandboxSteps.forEach(s=>{s.done=false; s.ts=null;});
+  const ns='checkout-sandbox-'+Math.random().toString(36).slice(2,7);
+  pushLog('INFO','remops-sandbox','provisioning isolated namespace '+ns+' — cloning checkout-service at v2.113.2');
+  pushTimeline('Sandbox validation started — testing the rollback in an isolated namespace before it ever reaches production');
+  if(state.rops.activeSection==='sandbox'||state.rops.activeSection==='remediation'||state.rops.activeSection==='command') renderActiveConsole();
+
+  // First attempt occasionally trips the same failure signature, purely to
+  // demonstrate the auto-rollback safety net — it always converges on retry.
+  const willFail = state.sandbox.attempts===1 && Math.random()<0.28;
+  const offsets=[500,1300,2200,3100,3900];
+  const logs=[
+    ['INFO','remops-sandbox','namespace ready — checkout-service:v2.113.2 deployed to sandbox'],
+    ['INFO','remops-sandbox','sandbox seeded from anonymized production snapshot'],
+    ['INFO','remops-sandbox','replaying 500 production checkout requests as synthetic canary traffic'],
+    ['INFO','remops-sandbox','comparing sandbox error rate against production baseline'],
+    ['INFO','remops-sandbox','comparing sandbox p95 latency against production baseline'],
+  ];
+  state.sandboxSteps.slice(0,5).forEach((st,i)=>{
+    schedule(()=>{
+      st.done=true; st.ts=fmtTime(now());
+      pushLog(logs[i][0],logs[i][1],logs[i][2]);
+      if(state.rops.activeSection==='sandbox') renderActiveConsole();
+    }, offsets[i]);
+  });
+
+  schedule(()=>{
+    const decision=state.sandboxSteps[5];
+    decision.done=true; decision.ts=fmtTime(now());
+    if(willFail){
+      state.sandbox.status='failed';
+      state.sandbox.failReason='Sandbox connection pool re-saturated under replayed load (97% util) — same regression pattern as production';
+      pushLog('ERROR','remops-sandbox','validation FAILED — '+state.sandbox.failReason);
+      pushLog('WARN','remops-sandbox','auto-rollback: tearing down sandbox namespace '+ns+' — production was never touched');
+      pushTimeline('Sandbox validation failed — RemOps auto-rolled back the sandbox test and blocked the production promotion');
+      setPhase('sandbox_failed');
+      schedule(()=> runSandboxValidation(), 2800);
+    } else {
+      state.sandbox.status='passed';
+      pushLog('INFO','remops-sandbox','validation PASSED — 0 errors across 500 synthetic transactions, p95 612ms, pool util 58%');
+      pushTimeline('Sandbox validation passed — promoting the identical rollback to production');
+      if(state.rops.activeSection==='sandbox'||state.rops.activeSection==='command') renderActiveConsole();
+      schedule(()=> runProductionRemediation(), 1200);
+    }
+  }, offsets[4]+900);
+}
+
+function runProductionRemediation(){
   setPhase('remediating');
-  pushLog('INFO','remops-executor','remediation authorized — starting rollback of checkout-service');
+  pushLog('INFO','remops-executor','sandbox-validated — starting rollback of checkout-service in production');
 
   const steps=state.remediationSteps;
   const offsets=[900,2400,4000,5600,7200,8800];
@@ -1201,6 +1270,8 @@ function updateStatusPill(){
     investigating:['RemOps investigating','bad'],
     rootcause:['Root cause identified','warn'],
     remediation_ready:['Awaiting authorization','warn'],
+    sandbox_test:['Testing fix in sandbox','warn'],
+    sandbox_failed:['Sandbox failed — auto-rolled back','bad'],
     remediating:['Remediation in progress','recovering'],
     resolved:['Incident resolved · healthy','']
   };
@@ -1224,6 +1295,8 @@ function resetDemo(){
   state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
   state.failedCheckoutAttempts=0;
   state.orderConfirmed=false; state.orderConfirmedAt=null;
+  state.sandboxSteps.forEach(s=>{s.done=false; s.ts=null;});
+  state.sandbox={status:'idle', attempts:0, failReason:null};
   state.sessions=[]; state.logs=[];
   state.pods.forEach(p=>{p.restarts=0; p.status='run';});
   state.metrics.errorRate.cur=0.15; state.metrics.p95.cur=230; state.metrics.dbPool.cur=41; state.metrics.payTimeout.cur=0.1;
@@ -1531,6 +1604,7 @@ const NAV_ITEMS=[
   {sec:'servicemap', label:'Service Map', icon:iconMap, group:'Overview'},
   {sec:'investigation', label:'Investigation', icon:iconSearch, group:'Overview'},
   {sec:'remediation', label:'Remediation', icon:iconWrench, group:'Overview'},
+  {sec:'sandbox', label:'Sandbox Validation', icon:iconFlask, group:'Overview'},
   {sec:'metrics', label:'Metrics', icon:iconChart, group:'Telemetry'},
   {sec:'logs', label:'Logs', icon:iconLogs, group:'Telemetry'},
   {sec:'traces', label:'Traces', icon:iconTrace, group:'Telemetry'},
@@ -1556,6 +1630,7 @@ function iconDeploy(){return `<svg width="15" height="15" viewBox="0 0 24 24" fi
 function iconGh(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.7 5.6.7 12c0 5.1 3.3 9.4 7.9 11 .6.1.8-.2.8-.6v-2.1c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2 0 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2A11 11 0 0 1 12 6.2c1 0 2.1.1 3.1.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.7.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.6 7.9-5.9 7.9-11C23.3 5.6 18.3.5 12 .5z"/></svg>`;}
 function iconUsers(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>`;}
 function iconReport(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6M9 9h1"/></svg>`;}
+function iconFlask(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6.5L3.5 18a2 2 0 0 0 1.7 3h13.6a2 2 0 0 0 1.7-3L15 8.5V2"/><path d="M7 2h10M6.5 15h11"/></svg>`;}
 
 function renderRopsShell(){
   const groups=['Overview','Telemetry','Infrastructure'];
@@ -1606,7 +1681,8 @@ function renderActiveConsole(){
 const DECK_STATE={
   normal:['mint','Nominal'], incident:['red','Anomaly'], detecting:['red','P1 Detected'],
   investigating:['red','Investigating'], rootcause:['amber','Root Cause'],
-  remediation_ready:['amber','Awaiting Auth'], remediating:['amber','Remediating'], resolved:['mint','Resolved'],
+  remediation_ready:['amber','Awaiting Auth'], sandbox_test:['amber','Sandbox Test'],
+  sandbox_failed:['red','Sandbox Failed'], remediating:['amber','Remediating'], resolved:['mint','Resolved'],
 };
 function elapsedStr(){
   const inc=state.incident;
@@ -1637,6 +1713,7 @@ function renderConsoleSection(){
   else if(sec==='servicemap') html = sectionServiceMap();
   else if(sec==='investigation') html = sectionInvestigation();
   else if(sec==='remediation') html = sectionRemediation();
+  else if(sec==='sandbox') html = sectionSandbox();
   else if(sec==='metrics') html = sectionMetrics();
   else if(sec==='logs') html = sectionLogs();
   else if(sec==='traces') html = sectionTraces();
@@ -1702,48 +1779,53 @@ const CC_SECTIONS={
     what:'The fix, ready to go. Roll back to <b>v2.113.2</b>.',
     role:'It knows what broke and how to fix it. It still will not touch production until you say so.'
   },
+  sandbox:{
+    n:'05 · Sandbox Validation',
+    what:'The fix, tested somewhere that is not production first.',
+    role:'Same rollback, run against an isolated copy with replayed traffic. If it fails here, RemOps tears it down and retries automatically — production never sees it.'
+  },
   report:{
-    n:'05 · Incident Report',
+    n:'06 · Incident Report',
     what:'The write-up. Everything that happened, start to finish.',
     role:'Nobody typed this. It is just what got recorded along the way.'
   },
   metrics:{
-    n:'06 · Metrics',
+    n:'07 · Metrics',
     what:'The numbers, up close.',
     role:'<b>39%</b> of checkouts failing, pages taking <b>4.8s</b>, payments timing out — all at the same moment.'
   },
   logs:{
-    n:'07 · Logs',
+    n:'08 · Logs',
     what:'What the servers are actually saying.',
     role:'Here is the real error: <b>could not get a database connection — all 120 were taken</b>.'
   },
   traces:{
-    n:'08 · Traces',
+    n:'09 · Traces',
     what:'One order, broken into steps.',
     role:'Nearly <b>4 seconds</b> just waiting for a database connection. Payment is not slow — it is stuck in the queue.'
   },
   k8s:{
-    n:'09 · Kubernetes',
+    n:'10 · Kubernetes',
     what:'The containers running checkout.',
     role:'They keep crashing. Restarting them is tempting and pointless — the same broken code comes right back.'
   },
   database:{
-    n:'10 · Database',
+    n:'11 · Database',
     what:'The database itself.',
     role:'Every connection is taken. Checkout alone is holding <b>93 of the 120</b>.'
   },
   deployments:{
-    n:'11 · Deployments',
+    n:'12 · Deployments',
     what:'What shipped recently.',
     role:'<b>v2.114.0</b> went out <b>8 minutes</b> before this started. The one before it ran fine for 11 days.'
   },
   github:{
-    n:'12 · GitHub',
+    n:'13 · GitHub',
     what:'The code change behind it.',
     role:'Merged 8 minutes ago. It opens a <b>new database connection for every item in the cart</b> instead of reusing one.'
   },
   sessions:{
-    n:'13 · Customer Sessions',
+    n:'14 · Customer Sessions',
     what:'What customers actually saw.',
     role:'This is where it started. It is not over until someone here can buy something.'
   },
@@ -1757,7 +1839,9 @@ const CC_PHASE={
   investigating:'Working backwards through eight sources.',
   rootcause:'Found it. The new deploy drained the database pool.',
   remediation_ready:'Fix is ready. Waiting on a human.',
-  remediating:'Rolling back. Watch the lines come down.',
+  sandbox_test:'Testing the fix in a sandbox first — production has not been touched yet.',
+  sandbox_failed:'Sandbox run failed. Auto-rolled back and retrying — production stayed untouched.',
+  remediating:'Sandbox passed. Rolling back production — watch the lines come down.',
   resolved:'Fixed — and a real order just went through.',
 };
 
@@ -1814,7 +1898,7 @@ function sectionExplain(){
         <div class="empty-console">No incident yet — place an order on the storefront</div>
       </div>`;
   }
-  const known = ['rootcause','remediation_ready','remediating','resolved'].includes(state.phase);
+  const known = ['rootcause','remediation_ready','sandbox_test','sandbox_failed','remediating','resolved'].includes(state.phase);
   return `
     ${sevTopline('What Happened')}
     <div class="panel">
@@ -1850,6 +1934,7 @@ const LADDER=[
   {k:'DETECT',   phases:['incident','detecting']},
   {k:'ISOLATE',  phases:['investigating']},
   {k:'DIAGNOSE', phases:['rootcause','remediation_ready']},
+  {k:'VALIDATE', phases:['sandbox_test','sandbox_failed']},
   {k:'REPAIR',   phases:['remediating']},
   {k:'VERIFY',   phases:['resolved']},
 ];
@@ -1886,7 +1971,11 @@ function sectionCommand(){
     [['Culprit','deploy v2.114.0'],['Mechanism','Pool exhaustion'],['Confidence',state.confidence?state.confidence+'%':'computing']]);
   else if(p==='remediation_ready') banner = bannerHtml('b-warn','?','Plan ready — awaiting your authorization','A six-step rollback plan has been generated and staged. RemOps will not touch production until a human authorizes it.',
     [['Plan','6 steps'],['Action','Rollback → v2.113.2'],['Gate','Human approval']]);
-  else if(p==='remediating') banner = bannerHtml('b-info','>','Executing rollback','Reverting checkout-service to the last known healthy release and draining unhealthy pods while watching the pool recover.',
+  else if(p==='sandbox_test') banner = bannerHtml('b-info','~','Validating in an isolated sandbox first','Authorized — but production is still untouched. RemOps is replaying the same rollback against a private sandbox copy of checkout-service before it goes anywhere near production.',
+    [['Namespace','checkout-sandbox'],['Target','v2.113.2'],['Production','not yet touched']]);
+  else if(p==='sandbox_failed') banner = bannerHtml('b-bad','!','Sandbox validation failed — auto-rolled back','The sandbox run tripped the same failure signature. RemOps tore the sandbox down automatically, blocked the production promotion, and is retrying.',
+    [['Result','FAILED'],['Auto-rollback','sandbox only'],['Production','never touched']]);
+  else if(p==='remediating') banner = bannerHtml('b-info','>','Executing rollback','Sandbox-validated — reverting checkout-service to the last known healthy release and draining unhealthy pods while watching the pool recover.',
     [['Executing','Rollback'],['Target','v2.113.2'],['Watching','Pool · p95 · 5xx']]);
   else banner = bannerHtml('b-ok','OK','Incident closed','checkout-service is back on v2.113.2, the connection pool has drained to baseline, and a customer order has completed end to end.',
     [['Outcome','Resolved'],['MTTR',elapsedStr()],['Report','Generated']]);
@@ -2013,8 +2102,8 @@ function renderStripWallLive(){
 /* Cockpit-style caution/warning panel: one lamp per service. */
 function annunHtml(){
   const broken=BROKEN_PHASES.has(state.phase);
-  const mid=['incident','detecting','investigating','rootcause','remediation_ready'].includes(state.phase);
-  const infra=['investigating','rootcause','remediation_ready'].includes(state.phase);
+  const mid=['incident','detecting','investigating','rootcause','remediation_ready','sandbox_test','sandbox_failed'].includes(state.phase);
+  const infra=['investigating','rootcause','remediation_ready','sandbox_test','sandbox_failed'].includes(state.phase);
   const services=[
     ['CHECKOUT', broken],
     ['PAYMENTS', mid],
@@ -2080,7 +2169,7 @@ function nodeState(name){
   const badNodes=['Checkout API','Order Service','Payment Service','PostgreSQL','DB Connection Pool'];
   if(!broken) return {color:'var(--green)', label:'Nominal'};
   if(state.phase==='remediating' || state.phase==='resolved') return {color:'var(--green)', label:'Recovering'};
-  if(name==='DB Connection Pool' && (state.phase==='rootcause'||state.phase==='remediation_ready')) return {color:'var(--red)', label:'Saturated · root cause'};
+  if(name==='DB Connection Pool' && ['rootcause','remediation_ready','sandbox_test','sandbox_failed'].includes(state.phase)) return {color:'var(--red)', label:'Saturated · root cause'};
   if(traced) return {color:'var(--amber)', label:badNodes.includes(name)?'Degraded':'Traced'};
   if(badNodes.includes(name)) return {color:'var(--red)', label:'Degraded'};
   return {color:'var(--green)', label:'Nominal'};
@@ -2171,22 +2260,31 @@ function confRingSvg(pct){
 /* ---- Remediation ---- */
 function sectionRemediation(){
   const ready = state.phase==='remediation_ready';
+  const validating = state.phase==='sandbox_test' || state.phase==='sandbox_failed';
   const active = state.phase==='remediating' || state.phase==='resolved';
+  const known = ready || validating || active;
   return `
     ${sevTopline('Remediation')}
     <div class="panel">
       <div class="panel-h"><h2>Remediation Plan</h2><span class="sub">checkout-service v2.114.0 → v2.113.2</span></div>
-      ${!ready && !active ? `<div class="empty-console" style="padding:24px 10px">${state.phase==='normal'?'No active incident.':'RemOps is still investigating — plan not yet generated.'}</div>` : `
+      ${!known ? `<div class="empty-console" style="padding:24px 10px">${state.phase==='normal'?'No active incident.':'RemOps is still investigating — plan not yet generated.'}</div>` : `
       ${state.remediationSteps.map((s,i)=>`
         <div class="remstep ${s.done?'done':(!active && i===0 && ready?'active':'')}">
           <div class="n">${s.done?'✓':i+1}</div>
           <div class="txt">${s.label}</div>
           ${s.ts?`<div class="ts">${s.ts}</div>`:''}
         </div>`).join('')}
-      <button class="authbtn" id="authBtn" ${!ready?'disabled':''}>${active?(state.phase==='resolved'?'Remediation Complete':'Remediation In Progress…'):'Authorize Remediation'}</button>
+      <button class="authbtn" id="authBtn" ${!ready?'disabled':''}>${active?(state.phase==='resolved'?'Remediation Complete':'Remediation In Progress…'):validating?'Validating In Sandbox…':'Authorize Remediation'}</button>
       `}
     </div>
-    ${(ready||active) ? `<div class="panel">
+    ${validating ? `<div class="panel">
+      <div class="panel-h"><h2>Pre-production Gate</h2><span class="sub">production not yet touched</span></div>
+      <div style="padding:12px 0 4px">
+        <p style="margin:0 0 12px;font:400 13px var(--pt);color:var(--ink-2);line-height:1.6">This exact plan is being tested against an isolated sandbox copy of checkout-service before it is allowed anywhere near production. A failed sandbox run auto-rolls-back and retries — it never reaches production on a failure.</p>
+        <button class="rollback-btn" id="viewSandboxBtn">View sandbox validation →</button>
+      </div>
+    </div>` : ''}
+    ${(known) ? `<div class="panel">
       <div class="panel-h"><h2>Target Deployment</h2></div>
       <div class="dep-row flagged"><div class="dep-dot"></div><div class="body">
         <div class="ver">checkout-service v2.114.0 <span class="flag">FLAGGED</span></div>
@@ -2196,6 +2294,50 @@ function sectionRemediation(){
         <div class="ver">Rollback target: v2.113.2</div>
         <div class="sub">Last known healthy release · 7-day baseline match</div>
       </div></div>
+    </div>` : ''}
+  `;
+}
+
+/* ---- Sandbox Validation ---- */
+function firstPendingIdx(steps){ return steps.findIndex(s=>!s.done); }
+function sectionSandbox(){
+  const sb = state.sandbox;
+  const running = sb.status==='running';
+  const failed = sb.status==='failed';
+  const passed = sb.status==='passed';
+  const idle = sb.status==='idle';
+  const pendingIdx = firstPendingIdx(state.sandboxSteps);
+
+  let banner;
+  if(idle) banner = bannerHtml('b-idle','—','No validation run yet','Sandbox testing runs automatically once remediation is authorized. Nothing is ever pushed to production without passing here first.', []);
+  else if(running) banner = bannerHtml('b-info','~','Testing the fix in an isolated sandbox','Rolling back a private replica of checkout-service to v2.113.2 and replaying real traffic against it — before touching production.',
+    [['Namespace','checkout-sandbox'],['Target','v2.113.2'],['Traffic','500 replayed requests'],['Attempt',sb.attempts]]);
+  else if(failed) banner = bannerHtml('b-bad','!','Validation failed — auto-rolled back','The sandbox run tripped the same failure signature. RemOps tore the sandbox down automatically and blocked production. Production was never touched.',
+    [['Result','FAILED'],['Reason',sb.failReason||'—'],['Production impact','none — blocked'],['Next','auto-retrying']]);
+  else if(passed) banner = bannerHtml('b-ok','OK','Validation passed — promoted to production','0 errors across 500 synthetic transactions in the sandbox. The identical rollback is now running against production.',
+    [['Result','PASSED'],['Errors','0 / 500'],['p95 (sandbox)','612ms'],['Promoted','yes']]);
+
+  return `
+    ${sevTopline('Sandbox Validation')}
+    ${banner}
+    <div class="panel">
+      <div class="panel-h"><h2>Pre-production Test Plan</h2><span class="sub">isolated namespace · attempt ${sb.attempts||0}</span></div>
+      ${!sb.attempts ? `<div class="empty-console" style="padding:24px 10px">Runs automatically after remediation is authorized.</div>` : state.sandboxSteps.map((s,i)=>`
+        <div class="remstep ${s.done?'done':(running && i===pendingIdx?'active':'')}">
+          <div class="n">${s.done?'✓':i+1}</div>
+          <div class="txt">${s.label}</div>
+          ${s.ts?`<div class="ts">${s.ts}</div>`:''}
+        </div>`).join('')}
+    </div>
+    ${failed ? `<div class="panel">
+      <div class="panel-h"><h2>Auto-Rollback</h2></div>
+      <div style="padding:12px 0 4px">
+        <p style="margin:0;font:400 13px var(--pt);color:var(--ink-2);line-height:1.6">RemOps automatically tore down the sandbox namespace the moment the failure signature matched — no human had to intervene, and production was never in scope. A fresh sandbox attempt starts automatically.</p>
+      </div>
+    </div>` : ''}
+    ${(running||failed) ? `<div class="banner b-info" style="margin-top:0">
+      <div class="bicon">i</div>
+      <div class="btext"><h3>Safety Gate</h3><p>Production promotion is blocked until this sandbox run reports PASSED. There is no path from here to production on a failure.</p></div>
     </div>` : ''}
   `;
 }
@@ -2455,6 +2597,7 @@ function wireConsoleSection(sec){
   const auth=$('#authBtn'); if(auth) auth.addEventListener('click', authorizeRemediation);
   const quickAuth=$('#quickAuth'); if(quickAuth) quickAuth.addEventListener('click', authorizeRemediation);
   const dep=$('#deployRollbackBtn'); if(dep) dep.addEventListener('click', ()=>{ state.rops.activeSection='remediation'; renderRopsShell(); });
+  const viewSb=$('#viewSandboxBtn'); if(viewSb) viewSb.addEventListener('click', ()=>{ state.rops.activeSection='sandbox'; renderRopsShell(); });
 }
 
 /* ============================================================
@@ -2646,8 +2789,12 @@ async function playScript(myToken){
   await click('#authBtn','Authorizing remediation');
   if(dead()) return;
 
+  await click('[data-sec="sandbox"]','Testing the fix in an isolated sandbox first');
+  await waitForPhase('remediating', 30000);
+  if(dead()) return;
+
   await goto('[data-sec="command"]');
-  caption('Rolling back deployment, restoring connections…');
+  caption('Sandbox passed — rolling back production, restoring connections…');
   await waitForPhase('resolved', 20000);
   if(dead()) return;
   await wait(1000);
