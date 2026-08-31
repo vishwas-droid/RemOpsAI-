@@ -901,11 +901,6 @@ table.k8s td:first-child{color:var(--ink)}
 .doc-content h2:first-of-type{margin-top:0}
 .doc-content p{font:400 13.5px/1.7 var(--sans);color:#c6cce0;margin:0 0 14px}
 .doc-content b{color:var(--ink)}
-.doc-steps{display:flex;flex-direction:column;gap:14px;margin:18px 0 28px}
-.doc-step{display:flex;gap:14px;padding:16px;border:1px solid #232c40;border-radius:10px;background:#0d1119}
-.doc-step .n{flex:none;width:28px;height:28px;border-radius:8px;background:#161d2b;border:1px solid #2a3450;display:flex;align-items:center;justify-content:center;font:700 12px var(--mono);color:var(--accent-2)}
-.doc-step .b b{display:block;font:700 13.5px var(--sans);color:var(--ink);margin-bottom:4px}
-.doc-step .b p{margin:0;font:400 12.5px/1.6 var(--sans);color:#8b93ab}
 .doc-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 24px}
 .doc-chip{padding:7px 13px;border:1px solid #232c40;border-radius:20px;background:#0d1119;color:#c6cce0;font:600 12px var(--sans)}
 .doc-safety{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 24px}
@@ -918,16 +913,9 @@ table.k8s td:first-child{color:var(--ink)}
 .doc-faq-item:last-child{border-bottom:none}
 .doc-faq-item b{display:block;font:700 13.5px var(--sans);color:var(--ink);margin-bottom:6px}
 .doc-faq-item p{margin:0;font:400 13px/1.65 var(--sans);color:#8b93ab}
-.doc-chat{margin:18px 0 24px;border:1px solid #232c40;border-radius:10px;background:#0d1119;overflow:hidden}
-.doc-chat-hdr{padding:10px 14px;background:#12182e;border-bottom:1px solid #1c2334;font:700 11.5px var(--mono);color:#8b93ab}
-.doc-chat-body{padding:14px;display:flex;flex-direction:column;gap:12px}
-.doc-chat-msg{display:flex;gap:10px}
-.doc-chat-av{width:26px;height:26px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font:700 10.5px var(--sans);color:#fff}
-.doc-chat-body b{font:700 12px var(--sans);color:var(--ink)}
-.doc-chat-body .ts{font:500 9.5px var(--mono);color:#5c657c;margin-left:6px;font-weight:400}
-.doc-chat-txt{font:400 12.5px/1.5 var(--sans);color:#c6cce0;margin-top:2px}
-.doc-chat-msg.bot .doc-chat-av{background:var(--accent-2)}
-.doc-chat-fix{margin-top:2px;padding:10px 12px;border:1px solid #1c3a3a;border-radius:8px;background:rgba(34,211,183,.06)}
+.doc-term{margin:0 0 18px;background:#000;border:1px solid #232c40;border-radius:9px;padding:14px 16px;font:400 12px/1.85 var(--mono);color:#c6cce0;white-space:pre-wrap;overflow-x:auto}
+.doc-term .prompt{color:var(--ok)}
+.doc-term .out{color:#5c657c}
 
 </style>
 </head>
@@ -2759,26 +2747,38 @@ function wireConsoleSection(sec){
    remopsai.com so this stays consistent with the real site.
    ============================================================ */
 const DOCS=[
-  {key:'overview', title:'Overview', ic:'📘',
-    body:()=>`
-      <h1>RemOpsAI</h1>
-      <p class="lede">Keep production moving. When Datadog, Grafana, or PagerDuty fires, RemOps intakes the alert, runs an AI investigation against your connected stack, and queues a fix for your approval — inside your cluster.</p>
-      <h2>Why RemOpsAI</h2>
-      <p>Connects to your stack, investigates incidents, and queues fixes your team approves — without replacing the tools you already run.</p>
-      <div class="doc-steps">
-        <div class="doc-step"><span class="n">01</span><div class="b"><b>Connect your stack</b><p>40+ tools. Encrypted creds. Datadog, PagerDuty, K8s, GitHub, AWS — each takes minutes.</p></div></div>
-        <div class="doc-step"><span class="n">02</span><div class="b"><b>One incident view</b><p>Evidence, blast radius, and root cause in one place — not six browser tabs at 3am.</p></div></div>
-        <div class="doc-step"><span class="n">03</span><div class="b"><b>You approve every fix</b><p>Nothing writes to prod without your team. Dry-run first. Full audit trail.</p></div></div>
-      </div>`},
   {key:'onboarding', title:'Getting Started', ic:'🚀',
     body:()=>`
       <h1>Getting Started</h1>
       <p class="lede">Connect your stack, point your alerts, and the next incident takes minutes, not hours.</p>
-      <div class="doc-steps">
-        <div class="doc-step"><span class="n">1</span><div class="b"><b>Connect your stack</b><p>40+ tools, encrypted creds, scoped least-privilege access. Datadog, PagerDuty, Kubernetes, GitHub, AWS — each integration takes minutes to set up.</p></div></div>
-        <div class="doc-step"><span class="n">2</span><div class="b"><b>Point your alerting at RemOps</b><p>Route your existing PagerDuty, Datadog, or Grafana alerts to RemOps. It intakes the page automatically — nothing about your alerting setup has to change.</p></div></div>
-        <div class="doc-step"><span class="n">3</span><div class="b"><b>Review your first plan</b><p>RemOps proposes concrete steps — scale a deployment, revert a PR, patch a ConfigMap. You review the plan and evidence, approve once, and it runs with automatic rollback if verification fails.</p></div></div>
-      </div>
+      <h2>1. Install &amp; authenticate</h2>
+      <div class="doc-term"><span class="prompt">$</span> npx remops init
+<span class="out">✓ Created .remops/config.yml</span>
+<span class="prompt">$</span> remops login
+<span class="out">✓ Authenticated as you@yourcompany.com</span></div>
+      <h2>2. Connect your stack</h2>
+      <p>40+ tools, encrypted creds, scoped least-privilege access — each integration takes minutes.</p>
+      <div class="doc-term"><span class="prompt">$</span> remops connect datadog --api-key=$DATADOG_API_KEY
+<span class="out">✓ Connected — logs, metrics, APM</span>
+<span class="prompt">$</span> remops connect kubernetes --context=prod-cluster
+<span class="out">✓ Connected — read-only, prod-cluster</span>
+<span class="prompt">$</span> remops connect github --app-id=$GITHUB_APP_ID
+<span class="out">✓ Connected — checkout-service, order-service, payment-service</span>
+<span class="prompt">$</span> remops connect pagerduty --token=$PAGERDUTY_TOKEN
+<span class="out">✓ Connected — 3 escalation policies found</span></div>
+      <h2>3. Point your alerting at RemOps</h2>
+      <p>Route your existing PagerDuty, Datadog, or Grafana alerts to RemOps — nothing about your alerting setup has to change.</p>
+      <div class="doc-term"><span class="prompt">$</span> remops webhook create --source=pagerduty
+<span class="out">✓ Webhook registered → https://hooks.remopsai.com/inc</span></div>
+      <h2>4. Review your first plan</h2>
+      <p>RemOps proposes concrete steps — scale a deployment, revert a PR, patch a ConfigMap. You review the plan and evidence, approve once, and it runs with automatic rollback if verification fails.</p>
+      <div class="doc-term"><span class="prompt">$</span> remops incidents list
+<span class="out">INC-2847  checkout-service  p99 latency  investigating…</span>
+<span class="prompt">$</span> remops plan show INC-2847
+<span class="out">Root cause: payments-db-pool max_connections 100→10 (PR #4821)
+Proposed fix: revert PR #4821 · dry-run passed · blast radius: 1 service</span>
+<span class="prompt">$</span> remops plan approve INC-2847
+<span class="out">✓ Approved — rollback applying, verifying automatically</span></div>
       <h2>Pricing</h2>
       <p>Free during public beta.</p>`},
   {key:'integrations', title:'Integrations', ic:'🔌',
@@ -2801,25 +2801,6 @@ const DOCS=[
         <div class="doc-safety-card"><b>Encrypted creds</b><p>Credentials encrypted at rest with scoped, least-privilege access.</p></div>
         <div class="doc-safety-card"><b>Full audit trail</b><p>Every action logged, signed, and retained.</p></div>
       </div>`},
-  {key:'walkthrough', title:'Sample Incident', ic:'💬',
-    body:()=>`
-      <h1>Watch the panic stop</h1>
-      <p class="lede">A real shape of what a 3am page looks like before and after RemOps is in the loop.</p>
-      <div class="doc-chat">
-        <div class="doc-chat-hdr"># inc-3112-checkout-errors</div>
-        <div class="doc-chat-body">
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#f0475a">D</span><div><b>dara on-call<span class="ts">3:14 AM</span></b><div class="doc-chat-txt">checkout p99 just blew past 1.8s, anyone else seeing this??</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#4c8dff">M</span><div><b>mike<span class="ts">3:16 AM</span></b><div class="doc-chat-txt">here. everything's red but nothing says why</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#f0475a">D</span><div><b>dara on-call<span class="ts">3:22 AM</span></b><div class="doc-chat-txt">16 dashboards open. cpu fine. memory fine. network fine. everything is fine except everything 🙃</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#22c77a">P</span><div><b>priya · vp eng<span class="ts">3:28 AM</span></b><div class="doc-chat-txt">any update?</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#4c8dff">M</span><div><b>mike<span class="ts">3:31 AM</span></b><div class="doc-chat-txt">restarting the pods, brb</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#4c8dff">M</span><div><b>mike<span class="ts">3:40 AM</span></b><div class="doc-chat-txt">…helped for nine minutes. it's back.</div></div></div>
-          <div class="doc-chat-msg bot"><span class="doc-chat-av">Fx</span><div><b>RemOps<span class="ts">3:41 AM</span></b><div class="doc-chat-txt">Root cause found · 92% confidence<div class="doc-chat-fix"><b>payments-db-pool</b> · max_connections 100 → 10 · shipped Friday 18:07 · PR #4821<br>dry-run passed · blast radius: 1 service · rollback ready</div></div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#f0475a">D</span><div><b>dara on-call<span class="ts">3:42 AM</span></b><div class="doc-chat-txt">✅ approved the rollback</div></div></div>
-          <div class="doc-chat-msg bot"><span class="doc-chat-av">Fx</span><div><b>RemOps<span class="ts">3:43 AM</span></b><div class="doc-chat-txt">Rollback applied. p99 1.84s → 210ms. Verified stable · resolving incident.</div></div></div>
-          <div class="doc-chat-msg"><span class="doc-chat-av" style="background:#22c77a">P</span><div><b>priya · vp eng<span class="ts">3:44 AM</span></b><div class="doc-chat-txt">wait. that's it?</div></div></div>
-        </div>
-      </div>`},
   {key:'faq', title:'FAQ', ic:'❓',
     body:()=>`
       <h1>Common questions</h1>
@@ -2831,7 +2812,7 @@ const DOCS=[
         <div class="doc-faq-item"><b>How much does it cost?</b><p>Free during public beta.</p></div>
       </div>`},
 ];
-const docState={ selected:'overview' };
+const docState={ selected:'onboarding' };
 function selectDoc(key){ docState.selected=key; renderDocsConsole(); }
 function renderDocsConsole(){
   const el=$('#env-docs'); if(!el) return;
