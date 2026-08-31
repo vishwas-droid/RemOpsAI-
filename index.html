@@ -947,6 +947,209 @@ table.k8s td:first-child{color:var(--ink)}
 .tool-screen.rops .tool-bar{background:#0f2222}
 .rops-t{font:700 13px var(--sans);color:var(--ink);margin-bottom:4px}
 .rops-d{font:400 12px/1.55 var(--sans);color:#c6cce0}
+
+/* ============================================================
+   FULL TOOL DASHBOARDS — each manual step opens its own full
+   console, the same weight as the RemOpsAI console itself, so the
+   engineer visibly has to walk through 11-12 separate tools before
+   reaching a hypothesis.
+   ============================================================ */
+.toolfull-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column}
+.toolfull-overlay[hidden]{display:none}
+.toolfull-top{
+  display:flex;align-items:center;gap:14px;padding:12px 20px;background:#0d1119;border-bottom:1px solid #1c2334;flex:none;
+}
+.toolfull-brand{display:flex;align-items:center;gap:10px}
+.toolfull-dot{width:11px;height:11px;border-radius:50%;flex:none}
+.toolfull-name{font:700 14px var(--sans);color:var(--ink)}
+.toolfull-sub{font:500 10.5px var(--mono);color:#5c657c;letter-spacing:.04em;margin-left:8px}
+.toolfull-spacer{flex:1}
+.toolfull-clock{font:700 15px var(--mono);color:var(--warn);letter-spacing:-.01em}
+.toolfull-clock-lbl{font:600 8.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#5c657c;margin-right:8px}
+.toolfull-body{flex:1;overflow-y:auto;padding:22px 26px 40px}
+.toolfull-inner{max-width:980px;margin:0 auto}
+.toolfull-foot{display:flex;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid #1c2334;background:#0d1119;flex:none}
+.tf-btn{padding:10px 16px;border-radius:8px;border:1px solid #232c40;background:#12182450;color:#c6cce0;font:600 12px var(--sans);cursor:pointer}
+.tf-btn:hover{border-color:#3a4666;color:var(--ink)}
+.tf-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.tf-btn.primary:hover{filter:brightness(1.08)}
+
+/* PagerDuty */
+.pd-timeline{margin-top:16px;display:flex;flex-direction:column;gap:0}
+.pd-tl-row{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid #1c2334}
+.pd-tl-row:last-child{border-bottom:none}
+.pd-tl-t{width:70px;flex:none;font:500 10.5px var(--mono);color:#5c657c}
+.pd-tl-d{font:400 12.5px var(--sans);color:#c6cce0}
+.pd-responders{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.pd-resp{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #232c40;border-radius:20px;background:#0d1119;font:500 12px var(--sans);color:#c6cce0}
+.pd-resp .av{width:20px;height:20px;border-radius:50%;background:var(--danger);flex:none}
+
+/* Datadog Logs */
+.dd-facets{display:flex;gap:22px;margin-top:14px}
+.dd-facet-col{flex:none;width:150px;font:500 11px var(--sans);color:#8b93ab}
+.dd-facet-col h4{margin:0 0 8px;font:700 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#5c657c}
+.dd-facet-col div{padding:4px 0}
+.dd-logtable{flex:1;min-width:0}
+.dd-lt-row{display:grid;grid-template-columns:78px 54px 130px 1fr;gap:12px;padding:6px 8px;border-bottom:1px solid #1c2334;font:400 11px var(--mono)}
+.dd-lt-row.err{background:var(--danger-soft)}
+.dd-lt-row.warn{background:var(--warn-soft)}
+.dd-lt-row .lvl{font-weight:700}
+.dd-lt-row.err .lvl{color:var(--danger)}
+.dd-lt-row.warn .lvl{color:var(--warn)}
+.dd-lt-row .svc{color:var(--accent)}
+.dd-lt-row .t{color:#5c657c}
+
+/* Datadog Metrics grid */
+.dd-metricgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+@media (max-width:700px){.dd-metricgrid{grid-template-columns:1fr}}
+.dd-mcard{border:1px solid #232c40;border-radius:9px;background:#0d1119;padding:14px}
+.dd-mcard .lbl{font:600 10px var(--mono);color:#8b93ab;letter-spacing:.05em;margin-bottom:8px}
+.dd-mcard .chart{height:70px}
+.dd-mcard .chart svg{width:100%;height:100%;display:block}
+.dd-mcard .now{font:700 18px var(--mono);color:var(--ink);margin-top:6px}
+
+/* APM flame / spans */
+.trace-flame{margin-top:14px}
+.trace-flame-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.trace-flame-lbl{width:220px;flex:none;font:500 10.5px var(--mono);color:#8b93ab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace-flame-bar{height:14px;background:#161d2b;border-radius:3px;flex:1;position:relative;overflow:hidden}
+.trace-flame-bar span{position:absolute;top:0;bottom:0;left:0;background:var(--accent);border-radius:3px;display:flex;align-items:center;padding-left:6px;font:600 9px var(--mono);color:#fff}
+.trace-flame-bar.slow span{background:var(--danger)}
+
+/* Kubernetes full */
+.k8s-cluster-stats{display:flex;gap:14px;margin:14px 0 16px;flex-wrap:wrap}
+.k8s-stat{padding:12px 18px;border:1px solid #232c40;border-radius:9px;background:#0d1119;min-width:110px}
+.k8s-stat .n{font:700 20px var(--mono);color:var(--ink)}
+.k8s-stat .l{font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#5c657c;margin-top:2px}
+.k8s-fulltable{width:100%;border-collapse:collapse;font:400 11.5px var(--mono)}
+.k8s-fulltable th{text-align:left;padding:7px 9px;font:600 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#5c657c;border-bottom:1px solid #232c40}
+.k8s-fulltable td{padding:7px 9px;border-bottom:1px solid #1c2334;color:#c6cce0}
+
+/* Database */
+.db-slowq{margin-top:16px}
+.db-slowq-row{display:grid;grid-template-columns:1fr 90px;gap:10px;padding:8px 0;border-bottom:1px solid #1c2334;font:400 11px var(--mono)}
+.db-slowq-row .q{color:#c6cce0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-slowq-row .ms{color:var(--danger);text-align:right;font-weight:700}
+
+/* GitHub */
+.gh-commitlist{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.gh-commit-row{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid #232c40;border-radius:8px;background:#0d1119;font:500 11.5px var(--sans);color:#c6cce0}
+.gh-commit-row.flag{border-color:var(--danger)}
+.gh-commit-row .sha{font:600 10.5px var(--mono);color:var(--accent)}
+.gh-diffview{margin-top:16px;border:1px solid #232c40;border-radius:8px;overflow:hidden;font:400 11px var(--mono)}
+.gh-diffline{padding:4px 12px;white-space:pre}
+.gh-diffline.add{background:rgba(34,199,122,.1);color:#7fe0ab}
+.gh-diffline.del{background:rgba(240,71,90,.1);color:#ffb0ba}
+.gh-diffline.ctx{color:#5c657c}
+
+/* Grafana-style infra grid */
+.grafana-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+@media (max-width:760px){.grafana-grid{grid-template-columns:1fr 1fr}}
+
+/* Slack thread */
+.slack-thread{margin-top:14px;display:flex;flex-direction:column;gap:14px}
+.slack-msg{display:flex;gap:11px}
+.slack-av{width:32px;height:32px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font:700 12px var(--sans);color:#fff}
+.slack-body{flex:1;min-width:0}
+.slack-who{font:700 12.5px var(--sans);color:var(--ink)}
+.slack-who .ts{font:500 10px var(--mono);color:#5c657c;margin-left:8px;font-weight:400}
+.slack-txt{font:400 13px/1.55 var(--sans);color:#c6cce0;margin-top:2px}
+
+/* Status page */
+.status-page{margin-top:14px;border:1px solid #232c40;border-radius:9px;overflow:hidden}
+.status-hdr{padding:14px 16px;background:#0d1119;border-bottom:1px solid #232c40;display:flex;align-items:center;gap:10px}
+.status-hdr .dot{width:10px;height:10px;border-radius:50%;background:var(--warn)}
+.status-hdr b{font:700 13px var(--sans);color:var(--ink)}
+.status-updates{padding:14px 16px}
+.status-upd{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #1c2334;font:400 12px/1.5 var(--sans);color:#c6cce0}
+.status-upd:last-child{border-bottom:none}
+.status-upd .ts{width:60px;flex:none;font:500 10px var(--mono);color:#5c657c}
+
+/* Confluence runbook */
+.confluence-doc{margin-top:14px;border:1px solid #232c40;border-radius:9px;background:#0d1119;padding:18px 20px}
+.confluence-doc h4{margin:0 0 4px;font:700 15px var(--sans);color:var(--ink)}
+.confluence-doc .meta{font:500 10.5px var(--mono);color:#5c657c;margin-bottom:14px}
+.confluence-doc ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.confluence-doc li{font:400 12.5px/1.6 var(--sans);color:#c6cce0}
+.confluence-stale{margin-top:14px;padding:10px 13px;border:1px dashed var(--warn);border-radius:7px;background:var(--warn-soft);font:500 11.5px var(--sans);color:#f5c97a}
+
+/* Terminal full */
+.term-full{margin-top:14px;font:400 12px var(--mono);color:#c6cce0;background:#0d1119;border:1px solid #232c40;border-radius:9px;padding:16px 18px;white-space:pre-wrap;line-height:1.85}
+.term-full .prompt{color:var(--ok)}
+.term-full .out{color:#8b93ab}
+.tf-hypothesis{margin-top:16px;padding:14px 16px;border:1px solid var(--warn);border-radius:9px;background:var(--warn-soft)}
+.tf-hypothesis .lbl{font:700 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
+.tf-hypothesis p{margin:0;font:400 12.5px/1.6 var(--sans);color:var(--ink)}
+
+/* ---- per-tool theming: each dashboard matches its real product's
+   actual light/dark convention and accent, instead of one generic
+   dark card style for everything. ---- */
+.toolfull-overlay.light .toolfull-top{background:#fff;border-bottom:1px solid #d0d7de}
+.toolfull-overlay.light .toolfull-name{color:#1c2128}
+.toolfull-overlay.light .toolfull-sub{color:#57606a}
+.toolfull-overlay.light .toolfull-clock-lbl{color:#8c959f}
+.toolfull-overlay.light .toolfull-body{background:#fff;color:#1c2128}
+.toolfull-overlay.light .toolfull-foot{background:#fff;border-top:1px solid #d0d7de}
+.toolfull-overlay.light .tf-btn{border-color:#d0d7de;background:#f6f8fa;color:#1c2128}
+.toolfull-overlay.light .tf-btn:hover{border-color:#8c959f;color:#1c2128}
+.toolfull-overlay.light .tf-btn.primary{background:#0969da;border-color:#0969da;color:#fff}
+.toolfull-overlay.light .dd-note{color:#57606a}
+.toolfull-overlay.light .pd-title{color:#1c2128}
+.toolfull-overlay.light .pd-meta{color:#57606a}
+.toolfull-overlay.light .pd-tl-row{border-color:#eaeef2}
+.toolfull-overlay.light .pd-tl-t{color:#57606a}
+.toolfull-overlay.light .pd-tl-d{color:#1c2128}
+.toolfull-overlay.light .pd-resp{background:#f6f8fa;border-color:#d0d7de;color:#1c2128}
+.toolfull-overlay.light .pd-ack{background:#DAFBE1;border-color:#1a7f37;color:#1a7f37}
+.toolfull-overlay.light .k8s-stat{background:#f6f8fa;border-color:#d0d7de}
+.toolfull-overlay.light .k8s-stat .n{color:#1c2128}
+.toolfull-overlay.light .k8s-stat .l{color:#57606a}
+.toolfull-overlay.light .k8s-fulltable th{color:#57606a;border-color:#d0d7de}
+.toolfull-overlay.light .k8s-fulltable td{color:#1c2128;border-color:#eaeef2}
+.toolfull-overlay.light .db-gauge-lbl{color:#9a6700}
+.toolfull-overlay.light .db-gauge-track{background:#f6f8fa;border-color:#d0d7de}
+.toolfull-overlay.light .db-slowq-row{border-color:#eaeef2}
+.toolfull-overlay.light .db-slowq-row .q{color:#1c2128}
+.toolfull-overlay.light .gh-commit-row{background:#f6f8fa;border-color:#d0d7de;color:#1c2128}
+.toolfull-overlay.light .gh-commit-row.flag{border-color:#cf222e;background:#FFEBE9}
+.toolfull-overlay.light .gh-commit-row .sha{color:#0969da}
+.toolfull-overlay.light .gh-diffview{border-color:#d0d7de}
+.toolfull-overlay.light .gh-diffline.add{background:#e6ffec;color:#116329}
+.toolfull-overlay.light .gh-diffline.del{background:#ffebe9;color:#82071e}
+.toolfull-overlay.light .gh-diffline.ctx{color:#57606a}
+.toolfull-overlay.light .slack-who{color:#1c2128}
+.toolfull-overlay.light .slack-who .ts{color:#8a8f98}
+.toolfull-overlay.light .slack-txt{color:#3b3f45}
+.toolfull-overlay.light .status-page{border-color:#d0d7de}
+.toolfull-overlay.light .status-hdr{background:#f6f8fa;border-color:#d0d7de}
+.toolfull-overlay.light .status-hdr b{color:#1c2128}
+.toolfull-overlay.light .status-upd{color:#1c2128;border-color:#eaeef2}
+.toolfull-overlay.light .status-upd .ts{color:#57606a}
+.toolfull-overlay.light .confluence-doc{background:#fff;border-color:#d0d7de}
+.toolfull-overlay.light .confluence-doc h4{color:#172b4d}
+.toolfull-overlay.light .confluence-doc .meta{color:#57606a}
+.toolfull-overlay.light .confluence-doc li{color:#1c2128}
+.toolfull-overlay.light .confluence-stale{background:#FFF8C5;border-color:#9a6700;color:#4d3800}
+.toolfull-overlay.light .dd-mcard{background:#f6f8fa;border-color:#d0d7de}
+.toolfull-overlay.light .dd-mcard .lbl{color:#57606a}
+.toolfull-overlay.light .dd-mcard .now{color:#1c2128}
+
+.toolfull-overlay.dd .toolfull-top{background:#151b26;border-bottom:1px solid #262e3f}
+.toolfull-overlay.dd .toolfull-body{background:#151b26}
+.toolfull-overlay.dd .toolfull-foot{background:#151b26;border-top:1px solid #262e3f}
+.toolfull-overlay.dd .dd-search{background:#0e131c;border-color:#262e3f}
+.toolfull-overlay.dd .dd-mcard{background:#0e131c;border-color:#262e3f}
+
+.toolfull-overlay.grafana .toolfull-top{background:#111217;border-bottom:1px solid #26272e}
+.toolfull-overlay.grafana .toolfull-body{background:#111217}
+.toolfull-overlay.grafana .toolfull-foot{background:#111217;border-top:1px solid #26272e}
+.toolfull-overlay.grafana .dd-mcard{background:#181b1f;border-color:#2c3235}
+.toolfull-overlay.grafana .tf-btn.primary{background:#F46800;border-color:#F46800}
+
+.toolfull-overlay.terminal .toolfull-top{background:#000;border-bottom:1px solid #1a1a1a}
+.toolfull-overlay.terminal .toolfull-body{background:#000}
+.toolfull-overlay.terminal .toolfull-foot{background:#000;border-top:1px solid #1a1a1a}
+.toolfull-overlay.terminal .term-full{background:#000;border-color:#222}
 </style>
 </head>
 <body>
@@ -970,6 +1173,8 @@ table.k8s td:first-child{color:var(--ink)}
 </div>
 
 <div class="mer-toast" id="toast"></div>
+
+<div class="toolfull-overlay" id="toolfullOverlay" hidden></div>
 
 <div class="ccbar" id="ccBar" hidden>
   <div class="cc-tag"><span class="cc-k">CC</span><span class="cc-sec" id="ccSection">—</span></div>
@@ -1424,8 +1629,9 @@ function resetDemo(){
   Object.values(state.metrics).forEach(m=>m.hist=[]);
   store.view='home'; store.selectedProduct=null; store.cart=[];
   raceState.started=false; raceState.startedAt=null;
-  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.manualBusy=false;
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.openTool=null;
   raceState.remopsStartedAt=null; raceState.remopsDoneAt=null;
+  const raceOverlay=$('#toolfullOverlay'); if(raceOverlay){ raceOverlay.hidden=true; raceOverlay.innerHTML=''; raceOverlay.className='toolfull-overlay'; }
   updateStatusPill(); updateTriggerBtn();
   renderStore(); renderActiveConsole(); renderRaceIfVisible();
 }
@@ -2737,79 +2943,175 @@ function wireConsoleSection(sec){
    the manual side has to be clicked through step by step, the
    same as a human actually would — nothing here is scripted pacing.
    ============================================================ */
-/* Small illustrative mock screens for the tools a manual on-call
-   engineer would actually have to open — not live product metrics,
-   just what it looks like to piece this together by hand. */
-function toolScreen(name, bodyHtml){
-  return `<div class="tool-screen"><div class="tool-bar"><span class="tool-dots"><span></span><span></span><span></span></span><span class="tool-name">${esc(name)}</span></div><div class="tool-body">${bodyHtml}</div></div>`;
+/* Illustrative mock dashboards for the tools a manual on-call
+   engineer would actually have to open — not live product data,
+   just what it looks like to piece this together by hand, one full
+   console at a time, the same weight as the RemOpsAI console itself. */
+function fullChartSvg(color, pts){
+  return `<svg viewBox="0 0 200 60" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
 }
-function miniSpikeSvg(color){
-  return `<svg viewBox="0 0 200 48" preserveAspectRatio="none"><polyline points="0,40 30,38 55,36 70,34 90,10 120,8 150,14 175,20 200,22" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
+function traceFlameRow(label, pct, ms, slow){
+  return `<div class="trace-flame-row"><span class="trace-flame-lbl">${esc(label)}</span><div class="trace-flame-bar${slow?' slow':''}"><span style="width:${pct}%">${esc(ms)}</span></div></div>`;
 }
-function traceMiniRow(label,pct,slow){
-  return `<div class="trace-mini-row"><span class="trace-mini-lbl">${esc(label)}</span><div class="trace-mini-bar${slow?' slow':''}"><span style="width:${pct}%"></span></div></div>`;
-}
-function k8sMiniRow(name,status){
-  const map={run:['RUNNING','run'],restart:['RESTARTED','crash'],crash:['CRASHLOOP','crash']};
-  const [txt,cls]=map[status];
-  return `<div class="k8s-mini-row"><span>${esc(name)}</span><span class="k8s-status ${cls}">${txt}</span></div>`;
+function k8sFullRow(name, status, restarts, age, node){
+  const map={run:'Running', restart:'Restarted', crash:'CrashLoopBackOff'};
+  const bad = status!=='run';
+  return `<tr><td>${esc(name)}</td><td${bad?' style="color:var(--danger);font-weight:700"':''}>${map[status]}</td><td>${restarts}</td><td>${age}</td><td>${esc(node)}</td></tr>`;
 }
 
-const MANUAL_STEPS=[
-  {label:'Open the paging alert and acknowledge it', sub:'checkout-service error rate paging on-call', tool:'PagerDuty · Incident #8823',
-    body:()=>`
+const TOOLS=[
+  {name:'PagerDuty', sub:'Incident #8823 — checkout-service', dot:'#06AC38', theme:'light',
+    full:()=>`
       <div class="pd-sev">SEV-1</div>
       <div class="pd-title">checkout-service — High error rate</div>
-      <div class="pd-meta">Triggered just now · Service: checkout-service · Escalation: On-Call Primary</div>
-      <button class="pd-ack">Acknowledged</button>`},
-  {label:'Open the logs dashboard and search for errors', sub:'grep across checkout-service, order-service, payment-service', tool:'Datadog · Log Explorer',
-    body:()=>`
-      <div class="dd-search">service:(checkout-service OR order-service OR payment-service) status:error</div>
-      <div class="dd-logline err">ERROR order-service — context deadline exceeded calling payment-service</div>
-      <div class="dd-logline err">ERROR order-service — could not acquire db connection: pool exhausted (120/120 in use)</div>
-      <div class="dd-logline warn">WARN checkout-service — p99 latency exceeded 2000ms threshold</div>
-      <div class="dd-note">1,842 matching lines across 6 pods — which one is actually the cause?</div>`},
-  {label:'Open the metrics dashboard and check error rate / latency', sub:'cross-reference against the alert', tool:'Datadog · Metrics Explorer',
-    body:()=>`
-      <div class="dd-chartlbl">checkout.error_rate</div>
-      <div class="dd-chart">${miniSpikeSvg('#f0475a')}</div>
-      <div class="dd-chartlbl">checkout.p95_latency</div>
-      <div class="dd-chart">${miniSpikeSvg('#f5a623')}</div>`},
-  {label:'Open the tracing tool and follow one slow request', sub:'checkout → order → payment → postgres', tool:'Datadog · APM Traces',
-    body:()=>`
-      ${traceMiniRow('checkout-api', 18, false)}
-      ${traceMiniRow('order-service', 22, false)}
-      ${traceMiniRow('payment-service', 34, false)}
-      ${traceMiniRow('postgres · connection.acquire', 92, true)}`},
-  {label:'Open the Kubernetes dashboard and check pod health', sub:'pods restarting — cause, or symptom?', tool:'Kubernetes · checkout-service',
-    body:()=>`
-      ${k8sMiniRow('checkout-service-7f9d4c-2k9x','restart')}
-      ${k8sMiniRow('checkout-service-7f9d4c-x81m','run')}
-      ${k8sMiniRow('checkout-service-7f9d4c-qw3v','run')}
-      ${k8sMiniRow('checkout-service-7f9d4c-n0lz','crash')}`},
-  {label:'Open the database dashboard and check connection pool', sub:'cross-reference saturation timing against the trace', tool:'RDS Monitor · postgres-primary',
-    body:()=>`
-      <div class="db-gauge-lbl">120 / 120 connections in use</div>
-      <div class="db-gauge-track"><div class="db-gauge-fill" style="width:100%"></div></div>
-      <div class="dd-note">Pool is maxed — but is this the cause, or something downstream?</div>`},
-  {label:'Open the deploy history and find what shipped recently', sub:'read the diff, form a hypothesis', tool:'GitHub · checkout-service',
-    body:()=>`
-      <div class="gh-mini">
-        <div class="who">a13f9c2 · j.romero · 8 minutes ago</div>
-        <div class="msg">checkout-service v2.114.0 — connection handling refactor</div>
-        <div class="diff"><span class="add">+42</span><span class="del">−17</span></div>
+      <div class="pd-meta">Incident #8823 · Triggered just now · Escalation policy: On-Call Primary → Secondary</div>
+      <button class="pd-ack">Acknowledged by you</button>
+      <div class="pd-timeline">
+        <div class="pd-tl-row"><span class="pd-tl-t">0m</span><span class="pd-tl-d">Alert triggered — checkout.error_rate exceeded 10% for 2 minutes</span></div>
+        <div class="pd-tl-row"><span class="pd-tl-t">0m</span><span class="pd-tl-d">Notified: On-Call Primary (you)</span></div>
+        <div class="pd-tl-row"><span class="pd-tl-t">now</span><span class="pd-tl-d">Acknowledged</span></div>
       </div>
-      <div class="dd-note">Best guess: this deploy is related — not certain, but it's the most recent change.</div>`},
-  {label:'Write the fix and push it straight to production', sub:'no isolated test — hoping it works', risky:true, tool:'Terminal',
-    body:()=>`
-      <div class="term-mini"><span class="prompt">$</span> git revert a13f9c2
+      <div class="pd-responders">
+        <div class="pd-resp"><span class="av"></span>You · Primary On-Call</div>
+        <div class="pd-resp"><span class="av" style="background:var(--warn)"></span>Incident Commander — not yet paged</div>
+      </div>`},
+  {name:'Datadog', sub:'Log Explorer', dot:'#8C3AFF', theme:'dd',
+    full:()=>`
+      <div class="dd-search">service:(checkout-service OR order-service OR payment-service) status:error</div>
+      <div class="dd-facets">
+        <div class="dd-facet-col"><h4>Service</h4><div>checkout-service (612)</div><div>order-service (890)</div><div>payment-service (340)</div></div>
+        <div class="dd-logtable">
+          <div class="dd-lt-row err"><span class="lvl">ERROR</span><span class="svc">order-svc</span><span class="t">just now</span><span>could not acquire db connection: pool exhausted (120/120 in use)</span></div>
+          <div class="dd-lt-row err"><span class="lvl">ERROR</span><span class="svc">order-svc</span><span class="t">just now</span><span>context deadline exceeded calling payment-service</span></div>
+          <div class="dd-lt-row warn"><span class="lvl">WARN</span><span class="svc">checkout-svc</span><span class="t">1m ago</span><span>p99 latency exceeded 2000ms threshold on /v1/checkout/place-order</span></div>
+          <div class="dd-lt-row err"><span class="lvl">ERROR</span><span class="svc">checkout-api</span><span class="t">1m ago</span><span>POST /v1/checkout/place-order → 500 (upstream: payment-service timeout)</span></div>
+          <div class="dd-lt-row"><span class="lvl">INFO</span><span class="svc">api-gw</span><span class="t">2m ago</span><span>request handled</span></div>
+        </div>
+      </div>
+      <div class="dd-note" style="margin-top:12px">1,842 matching lines across 6 pods, three different services — which one is actually the cause?</div>`},
+  {name:'Datadog', sub:'Metrics Explorer', dot:'#8C3AFF', theme:'dd',
+    full:()=>`
+      <div class="dd-metricgrid">
+        <div class="dd-mcard"><div class="lbl">checkout.error_rate</div><div class="chart">${fullChartSvg('#f0475a','0,55 25,52 50,50 70,46 90,14 120,10 150,18 175,26 200,28')}</div><div class="now">38.7%</div></div>
+        <div class="dd-mcard"><div class="lbl">checkout.p95_latency</div><div class="chart">${fullChartSvg('#f5a623','0,55 25,53 50,50 70,45 90,16 120,12 150,20 175,28 200,30')}</div><div class="now">4.8s</div></div>
+        <div class="dd-mcard"><div class="lbl">db.pool_utilization</div><div class="chart">${fullChartSvg('#f0475a','0,50 25,48 50,44 70,30 90,10 120,6 150,8 175,9 200,8')}</div><div class="now">100%</div></div>
+        <div class="dd-mcard"><div class="lbl">payment.timeout_rate</div><div class="chart">${fullChartSvg('#f5a623','0,54 25,52 50,49 70,42 90,20 120,15 150,22 175,27 200,29')}</div><div class="now">29.4%</div></div>
+      </div>
+      <div class="dd-note" style="margin-top:14px">Four signals moved at once — but metrics alone don't say which one is upstream of the others.</div>`},
+  {name:'Datadog', sub:'APM / Distributed Tracing', dot:'#8C3AFF', theme:'dd',
+    full:()=>`
+      <div class="trace-flame">
+        ${traceFlameRow('checkout-api → place-order', 100, '4.82s', true)}
+        ${traceFlameRow('order-service → create-order', 96, '4.71s', true)}
+        ${traceFlameRow('order-service → payment-service.charge', 60, '2.9s', false)}
+        ${traceFlameRow('order-service → postgres.connection.acquire', 88, '4.2s', true)}
+        ${traceFlameRow('postgres → query.insert', 4, '210ms', false)}
+      </div>
+      <div class="dd-note" style="margin-top:12px">Almost the entire request is spent waiting on <b style="color:var(--ink)">postgres.connection.acquire</b> — but is the database slow, or just busy?</div>`},
+  {name:'Kubernetes', sub:'Cluster Dashboard — checkout-service', dot:'#326CE6', theme:'light',
+    full:()=>`
+      <div class="k8s-cluster-stats">
+        <div class="k8s-stat"><div class="n">6</div><div class="l">Pods</div></div>
+        <div class="k8s-stat"><div class="n">4</div><div class="l">Running</div></div>
+        <div class="k8s-stat"><div class="n">2</div><div class="l">Restarting</div></div>
+        <div class="k8s-stat"><div class="n">14</div><div class="l">Restarts (1h)</div></div>
+      </div>
+      <table class="k8s-fulltable">
+        <tr><th>Pod</th><th>Status</th><th>Restarts</th><th>Age</th><th>Node</th></tr>
+        ${k8sFullRow('checkout-service-7f9d4c-2k9x','restart',4,'11d','ip-10-0-3-21')}
+        ${k8sFullRow('checkout-service-7f9d4c-x81m','run',0,'11d','ip-10-0-3-22')}
+        ${k8sFullRow('checkout-service-7f9d4c-qw3v','run',0,'11d','ip-10-0-4-9')}
+        ${k8sFullRow('checkout-service-7f9d4c-n0lz','crash',9,'11d','ip-10-0-4-11')}
+        ${k8sFullRow('checkout-service-7f9d4c-h6bp','run',0,'11d','ip-10-0-4-12')}
+        ${k8sFullRow('checkout-service-7f9d4c-t4ry','run',0,'11d','ip-10-0-4-13')}
+      </table>
+      <div class="dd-note" style="margin-top:12px">Restarting pods usually means something — but the code hasn't changed since the last deploy, only the connection behavior. Restarting keeps bringing back the same problem.</div>`},
+  {name:'RDS Monitor', sub:'postgres-primary — Database Performance', dot:'#FF9900', theme:'light',
+    full:()=>`
+      <div class="db-gauge-lbl">120 / 120 connections in use — postgres-primary</div>
+      <div class="db-gauge-track"><div class="db-gauge-fill" style="width:100%"></div></div>
+      <div class="db-slowq">
+        <div class="db-slowq-row"><span class="q">SELECT ... FROM cart_items WHERE order_id = $1</span><span class="ms">4,180ms</span></div>
+        <div class="db-slowq-row"><span class="q">INSERT INTO orders (...) VALUES (...)</span><span class="ms">3,940ms</span></div>
+        <div class="db-slowq-row"><span class="q">SELECT ... FROM inventory WHERE sku = $1</span><span class="ms">3,802ms</span></div>
+        <div class="db-slowq-row"><span class="q">UPDATE cart SET status = 'checked_out'</span><span class="ms">3,610ms</span></div>
+      </div>
+      <div class="dd-note" style="margin-top:12px">These queries aren't slow on their own — they're just waiting behind everything else for a free connection.</div>`},
+  {name:'GitHub', sub:'checkout-service — Deploys & Commits', dot:'#24292f', theme:'light',
+    full:()=>`
+      <div class="gh-commitlist">
+        <div class="gh-commit-row flag"><span>checkout-service — connection handling refactor</span><span class="sha">a13f9c2 · 8m ago</span></div>
+        <div class="gh-commit-row"><span>inventory-service — cache TTL bump</span><span class="sha">7bd21e4 · 6h ago</span></div>
+        <div class="gh-commit-row"><span>search-service — typo fix in ranking config</span><span class="sha">e90a1c8 · 1d ago</span></div>
+      </div>
+      <div class="gh-diffview">
+        <div class="gh-diffline ctx">  func PlaceOrder(cart Cart) error {</div>
+        <div class="gh-diffline del">-   conn := pool.Acquire()</div>
+        <div class="gh-diffline del">-   defer conn.Release()</div>
+        <div class="gh-diffline add">+   for _, item := range cart.Items {</div>
+        <div class="gh-diffline add">+     conn := pool.Acquire()</div>
+        <div class="gh-diffline add">+     defer conn.Release()</div>
+        <div class="gh-diffline add">+   }</div>
+        <div class="gh-diffline ctx">    ...</div>
+      </div>
+      <div class="dd-note" style="margin-top:12px">Only the most recent commit touches checkout-service. Worth a closer look — but nothing here proves it's the cause yet.</div>`},
+  {name:'Grafana', sub:'Infra Overview — checkout-service cluster', dot:'#F46800', theme:'grafana',
+    full:()=>`
+      <div class="grafana-grid">
+        <div class="dd-mcard"><div class="lbl">CPU · checkout-service</div><div class="chart">${fullChartSvg('#73BF69','0,40 40,38 80,36 120,34 160,32 200,30')}</div><div class="now">41%</div></div>
+        <div class="dd-mcard"><div class="lbl">Memory · checkout-service</div><div class="chart">${fullChartSvg('#73BF69','0,42 40,41 80,40 120,39 160,38 200,38')}</div><div class="now">58%</div></div>
+        <div class="dd-mcard"><div class="lbl">Network I/O · cluster</div><div class="chart">${fullChartSvg('#F2CC0C','0,44 40,42 80,30 120,20 160,18 200,20')}</div><div class="now">312 Mbps</div></div>
+      </div>
+      <div class="dd-note" style="margin-top:12px">Infra itself looks healthy — CPU and memory are normal. Whatever this is, it isn't a resource problem.</div>`},
+  {name:'Slack', sub:'#incidents — war room', dot:'#4A154B', theme:'light',
+    full:()=>`
+      <div class="slack-thread">
+        <div class="slack-msg"><div class="slack-av" style="background:#f0475a">JR</div><div class="slack-body"><div class="slack-who">j.romero <span class="ts">4m ago</span></div><div class="slack-txt">anyone else seeing checkout errors? just deployed v2.114.0</div></div></div>
+        <div class="slack-msg"><div class="slack-av" style="background:#4c8dff">YO</div><div class="slack-body"><div class="slack-who">you <span class="ts">2m ago</span></div><div class="slack-txt">yeah, paged just now. looking at it</div></div></div>
+        <div class="slack-msg"><div class="slack-av" style="background:#22c77a">SM</div><div class="slack-body"><div class="slack-who">s.morgan <span class="ts">1m ago</span></div><div class="slack-txt">db pool looks maxed, might not be related to the deploy though</div></div></div>
+        <div class="slack-msg"><div class="slack-av" style="background:#4c8dff">YO</div><div class="slack-body"><div class="slack-who">you <span class="ts">just now</span></div><div class="slack-txt">still not 100% sure what's causing it — checking the deploy diff now</div></div></div>
+      </div>`},
+  {name:'Status Page', sub:'Customer-facing communications', dot:'#2FB670', theme:'light',
+    full:()=>`
+      <div class="status-page">
+        <div class="status-hdr"><span class="dot"></span><b>Checkout — Degraded Performance</b></div>
+        <div class="status-updates">
+          <div class="status-upd"><span class="ts">4m ago</span><span>We are investigating reports of checkout failures.</span></div>
+          <div class="status-upd"><span class="ts">2m ago</span><span>We have identified elevated error rates on the checkout API and are continuing to investigate.</span></div>
+          <div class="status-upd"><span class="ts">now</span><span>A fix is being evaluated. We will provide another update shortly.</span></div>
+        </div>
+      </div>
+      <div class="dd-note" style="margin-top:12px">Customers are watching this page — every extra minute here is public.</div>`},
+  {name:'Confluence', sub:'checkout-service — Incident Runbook', dot:'#0052CC', theme:'light',
+    full:()=>`
+      <div class="confluence-doc">
+        <h4>Checkout Service — Incident Runbook</h4>
+        <div class="meta">Last updated 7 months ago · Owner: platform-team</div>
+        <ol>
+          <li>Check checkout-service dashboard for error rate spikes.</li>
+          <li>Restart affected pods if crash-looping.</li>
+          <li>Check upstream payment gateway status page.</li>
+          <li>If unresolved after 15 minutes, escalate to Incident Commander.</li>
+        </ol>
+      </div>
+      <div class="confluence-stale">This runbook doesn't mention connection pooling or recent deploys — it was written before the current architecture. It won't get you to the answer today.</div>`},
+  {name:'Terminal', sub:'Form a hypothesis, then deploy the fix', dot:'#5c657c', theme:'terminal', risky:true,
+    full:()=>`
+      <div class="tf-hypothesis">
+        <div class="lbl">Working hypothesis</div>
+        <p>Best guess after 11 dashboards: the v2.114.0 deploy 8 minutes ago is <i>probably</i> related to the DB pool exhaustion — not fully certain, but it's the most recent change and the timing roughly lines up.</p>
+      </div>
+      <div class="term-full"><span class="prompt">$</span> git revert a13f9c2
+<span class="out">Reverting commit a13f9c2...</span>
 <span class="prompt">$</span> git push origin main --force-with-lease
-<span class="prompt">$</span> kubectl rollout restart deployment/checkout-service -n prod</div>
-      <div class="dd-note">Pushed straight to production — no staging test, no sandbox. Just watching the dashboards and hoping.</div>`},
+<span class="out">To github.com/meridian/checkout-service.git</span>
+<span class="prompt">$</span> kubectl rollout restart deployment/checkout-service -n prod
+<span class="out">deployment.apps/checkout-service restarted</span></div>
+      <div class="dd-note" style="margin-top:12px">Pushed straight to production. No staging test, no sandbox — just watching the dashboards and hoping this was the right call.</div>`},
 ];
 const raceState={
   started:false, startedAt:null,
-  manualIdx:0, manualDoneAt:null, manualBusy:false,
+  manualIdx:0, manualDoneAt:null, openTool:null,
   remopsStartedAt:null, remopsDoneAt:null,
 };
 function fmtRaceClock(ms){
@@ -2820,23 +3122,62 @@ function raceIsActive(){ const el=$('#env-race'); return !!(el && el.classList.c
 function renderRaceIfVisible(){ if(raceIsActive()) renderRace(); }
 
 function raceManualBody(){
-  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — click through every step yourself, opening the same tools an on-call engineer actually has to.</p>`;
+  if(!raceState.started) return `<p class="race-note">Same incident, handled the old way — open the same ${TOOLS.length} tools an on-call engineer actually has to, one at a time.</p>`;
   return `
-    <p class="race-note">Click each step — it opens the real tool you'd actually have to check.</p>
-    ${MANUAL_STEPS.map((st,i)=>{
+    <p class="race-note">Open each dashboard in order — ${TOOLS.length} full tools before a hypothesis.</p>
+    ${TOOLS.map((t,i)=>{
       const done = i<raceState.manualIdx;
       const active = i===raceState.manualIdx && !raceState.manualDoneAt;
-      const busy = active && raceState.manualBusy;
       return `<div class="race-step ${done?'done':active?'active':''}">
         <div class="race-step-row">
           <span class="dot"></span>
-          <span class="txt">${esc(st.label)}<span class="sub">${esc(st.sub)}</span>${st.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
-          ${done ? '' : active ? `<button class="race-stepbtn" data-step="${i}" ${busy?'disabled':''}>${busy?'Working…':'Do it'}</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
+          <span class="txt">${esc(t.name)} <span style="color:#5c657c">·</span> ${esc(t.sub)}${t.risky?'<span class="race-riskflag">no safety net</span>':''}</span>
+          ${done ? '' : active ? `<button class="race-stepbtn" data-tool="${i}">Open dashboard →</button>` : `<button class="race-stepbtn" disabled>Waiting</button>`}
         </div>
-        ${done ? toolScreen(st.tool, st.body()) : ''}
       </div>`;
     }).join('')}
+    ${raceState.manualDoneAt ? `<div class="tf-hypothesis"><div class="lbl">Manual conclusion</div><p>After ${TOOLS.length} separate dashboards: rolled back the most recent deploy and pushed straight to production — no isolated test, no sandbox.</p></div>` : ''}
   `;
+}
+function openManualTool(i){
+  if(!raceState.started || raceState.manualDoneAt) return;
+  if(i!==raceState.manualIdx) return;
+  raceState.openTool=i;
+  renderToolFull();
+}
+function closeManualTool(markDone){
+  const i=raceState.openTool;
+  raceState.openTool=null;
+  if(markDone && i===raceState.manualIdx){
+    raceState.manualIdx++;
+    if(raceState.manualIdx>=TOOLS.length) raceState.manualDoneAt=Date.now();
+  }
+  const ov=$('#toolfullOverlay'); if(ov){ ov.hidden=true; ov.innerHTML=''; ov.className='toolfull-overlay'; }
+  renderRaceIfVisible();
+}
+function renderToolFull(){
+  const el=$('#toolfullOverlay'); if(!el) return;
+  const i=raceState.openTool;
+  if(i==null){ el.hidden=true; el.innerHTML=''; return; }
+  const t=TOOLS[i];
+  const ms = raceState.startedAt ? Date.now()-raceState.startedAt : 0;
+  el.hidden=false;
+  el.className='toolfull-overlay'+(t.theme?' '+t.theme:'');
+  el.innerHTML=`
+    <div class="toolfull-top">
+      <div class="toolfull-brand"><span class="toolfull-dot" style="background:${t.dot}"></span><span class="toolfull-name">${esc(t.name)}</span><span class="toolfull-sub">${esc(t.sub)}</span></div>
+      <div class="toolfull-spacer"></div>
+      <span class="toolfull-clock-lbl">Manual elapsed</span>
+      <span class="toolfull-clock" id="toolfullClock">${fmtRaceClock(ms)}</span>
+    </div>
+    <div class="toolfull-body"><div class="toolfull-inner">${t.full()}</div></div>
+    <div class="toolfull-foot">
+      <button class="tf-btn" id="tfBack">← Back to the race</button>
+      <button class="tf-btn primary" id="tfNext">Mark reviewed — ${i<TOOLS.length-1?'next tool':'continue'} →</button>
+    </div>
+  `;
+  const backBtn=$('#tfBack'); if(backBtn) backBtn.addEventListener('click', ()=>closeManualTool(false));
+  const nextBtn=$('#tfNext'); if(nextBtn) nextBtn.addEventListener('click', ()=>closeManualTool(true));
 }
 
 /* Mirrors the real RemOps console, phase by phase, so both columns
@@ -2918,7 +3259,7 @@ function renderRace(){
     </div>
   `;
   const startBtn=$('#raceStartBtn'); if(startBtn) startBtn.addEventListener('click', startRace);
-  $$('.race-stepbtn[data-step]', el).forEach(b=>b.addEventListener('click', ()=>doManualStep(+b.getAttribute('data-step'))));
+  $$('.race-stepbtn[data-tool]', el).forEach(b=>b.addEventListener('click', ()=>openManualTool(+b.getAttribute('data-tool'))));
   const authBtn=$('#raceAuthBtn'); if(authBtn) authBtn.addEventListener('click', authorizeRemediation);
   if(prevManualScroll!=null){ const mb=$('#raceManualBody'); if(mb) mb.scrollTop=prevManualScroll; }
   if(prevRemopsScroll!=null){ const rb=$('#raceRemopsBody'); if(rb) rb.scrollTop=prevRemopsScroll; }
@@ -2928,22 +3269,10 @@ function startRace(){
   if(state.phase!=='normal') resetDemo();
   raceState.started=true;
   raceState.startedAt=Date.now();
-  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.manualBusy=false;
+  raceState.manualIdx=0; raceState.manualDoneAt=null; raceState.openTool=null;
   raceState.remopsStartedAt=Date.now(); raceState.remopsDoneAt=null;
   startIncident();
   renderRace();
-}
-function doManualStep(i){
-  if(!raceState.started || raceState.manualBusy || raceState.manualDoneAt) return;
-  if(i!==raceState.manualIdx) return;
-  raceState.manualBusy=true;
-  renderRace();
-  setTimeout(()=>{
-    raceState.manualBusy=false;
-    raceState.manualIdx++;
-    if(raceState.manualIdx>=MANUAL_STEPS.length) raceState.manualDoneAt=Date.now();
-    renderRace();
-  }, 700+Math.random()*900);
 }
 function tickRace(){
   if(!raceState.started) return;
@@ -2951,6 +3280,8 @@ function tickRace(){
     raceState.remopsDoneAt = (state.incident && state.incident.resolvedAt) ? state.incident.resolvedAt.getTime() : Date.now();
     renderRaceIfVisible();
   }
+  const tc=$('#toolfullClock');
+  if(tc && raceState.startedAt) tc.textContent = fmtRaceClock(Date.now()-raceState.startedAt);
   if(!raceIsActive()) return;
   const mc=$('#raceManualClock'), rc=$('#raceRemopsClock');
   if(mc) mc.textContent = fmtRaceClock((raceState.manualDoneAt?raceState.manualDoneAt:Date.now())-raceState.startedAt);
