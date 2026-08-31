@@ -2509,6 +2509,10 @@ const INCIDENT_HISTORY=[
   {id:'INC-1830', date:'Jun 24', service:'auth-service',      cause:'Token cache eviction storm',                confidence:95, correct:true,  predictedBlast:'2 services', actualBlast:'2 services', sandbox:'passed', wouldHaveFailed:false, resolveMin:1.6, repeatOf:null, overridden:false},
   {id:'INC-1799', date:'Jun 18', service:'order-service',     cause:'Retry storm on payment timeout',            confidence:79, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:3.5, repeatOf:null, overridden:false},
   {id:'INC-1742', date:'Jun 9',  service:'checkout-service',  cause:'Unclassified — no signal correlation found', confidence:31, correct:false, predictedBlast:'—', actualBlast:'1 service', sandbox:'—', wouldHaveFailed:false, resolveMin:null, repeatOf:null, overridden:false, missed:true},
+  {id:'INC-1701', date:'Jun 2',  service:'order-service',     cause:'Third-party tax API rate limit',            confidence:85, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:2.9, repeatOf:null, overridden:false},
+  {id:'INC-1665', date:'May 27', service:'checkout-service',  cause:'Redis session store failover lag',          confidence:90, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:2.1, repeatOf:null, overridden:false},
+  {id:'INC-1622', date:'May 19', service:'search-service',    cause:'Elasticsearch shard rebalance storm',       confidence:68, correct:true,  predictedBlast:'1 service', actualBlast:'2 services', sandbox:'passed', wouldHaveFailed:true,  resolveMin:5.4, repeatOf:null, overridden:true},
+  {id:'INC-1588', date:'May 11', service:'payment-service',   cause:'Currency conversion rounding bug',          confidence:93, correct:true,  predictedBlast:'1 service', actualBlast:'1 service', sandbox:'passed', wouldHaveFailed:false, resolveMin:1.9, repeatOf:null, overridden:false},
 ];
 function computeTrustStats(history){
   const evaluable=history.filter(h=>!h.missed);
