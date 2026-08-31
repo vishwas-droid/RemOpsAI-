@@ -987,6 +987,7 @@ const BROKEN_PHASES=new Set(['incident','detecting','investigating','rootcause',
 
 const state = {
   phase:'normal',
+  remopsActive:false,
   timers:[],
   heartbeat:null,
   incident:null, // {id, severity, detectedAt, resolvedAt}
@@ -1073,7 +1074,7 @@ function ropsActLadderHtml(){
 function renderStoreActivity(){
   const el=$('#ropsActivity'); if(!el) return;
   const onStore = $('#env-store')?.classList.contains('active');
-  if(state.phase==='normal' || !onStore){ el.hidden=true; el.innerHTML=''; return; }
+  if(state.phase==='normal' || !onStore || !state.remopsActive){ el.hidden=true; el.innerHTML=''; return; }
   el.hidden=false;
   const done = state.phase==='resolved';
   const feedItems = state.timeline.slice().reverse().slice(0,8);
@@ -1113,6 +1114,9 @@ function pushReasoning(text){
 /* ============================================================
    PHASE / INCIDENT ENGINE
    ============================================================ */
+/* Quiet beat between checkout failing and RemOps visibly reacting — gives
+   whoever's presenting room to narrate before the console springs to life. */
+const REMOPS_GRACE_MS=4000;
 function schedule(fn, ms){
   const id=setTimeout(fn, ms);
   state.timers.push(id);
@@ -1142,39 +1146,47 @@ function startIncident(){
   state.failedCheckoutAttempts=0;
 
   setPhase('incident');
-  pushLog('WARN','checkout-service','p99 latency exceeded 2000ms threshold on /v1/checkout/place-order');
-  pushLog('ERROR','order-service','context deadline exceeded calling payment-service');
-  flipPod(2,'restart');
 
+  // A deliberate quiet beat before RemOps visibly reacts — enough time for
+  // whoever's presenting to narrate the failure before the console (and the
+  // storefront activity widget) spring into action.
   schedule(()=>{
-    pushLog('ERROR','payment-service','upstream timeout after 5000ms (gateway: authnet-prod)');
-    pushLog('WARN','postgres-primary','connection wait time p95 = 1840ms');
-    pushTimeline('Checkout error rate begins increasing (0.2% → rising)');
-  },900);
+    state.remopsActive=true;
+    renderStoreActivity();
+    pushLog('WARN','checkout-service','p99 latency exceeded 2000ms threshold on /v1/checkout/place-order');
+    pushLog('ERROR','order-service','context deadline exceeded calling payment-service');
+    flipPod(2,'restart');
 
-  schedule(()=>{
-    flipPod(0,'restart');
-    pushLog('ERROR','order-service','could not acquire db connection: pool exhausted (120/120 in use)');
-    pushTimeline('Payment API p95 latency increases (240ms → 4.8s)');
-  },2600);
+    schedule(()=>{
+      pushLog('ERROR','payment-service','upstream timeout after 5000ms (gateway: authnet-prod)');
+      pushLog('WARN','postgres-primary','connection wait time p95 = 1840ms');
+      pushTimeline('Checkout error rate begins increasing (0.2% → rising)');
+    },900);
 
-  schedule(()=>{
-    pushTimeline('PostgreSQL connection pool reaches saturation (100% utilized)');
-    flipPod(4,'crash');
-  },4200);
+    schedule(()=>{
+      flipPod(0,'restart');
+      pushLog('ERROR','order-service','could not acquire db connection: pool exhausted (120/120 in use)');
+      pushTimeline('Payment API p95 latency increases (240ms → 4.8s)');
+    },2600);
 
-  schedule(()=>{
-    state.incident.detectedAt=now();
-    setPhase('detecting');
-    pushTimeline('Checkout failures cross critical threshold — auto-detected by RemOps');
-    pushLog('ERROR','remops-detector','anomaly correlation triggered: checkout.error_rate + db.pool_utilization + payment.timeout_rate');
-  },5600);
+    schedule(()=>{
+      pushTimeline('PostgreSQL connection pool reaches saturation (100% utilized)');
+      flipPod(4,'crash');
+    },4200);
 
-  schedule(()=>{
-    pushTimeline('Customer session telemetry shows repeated order failures');
-  },6600);
+    schedule(()=>{
+      state.incident.detectedAt=now();
+      setPhase('detecting');
+      pushTimeline('Checkout failures cross critical threshold — auto-detected by RemOps');
+      pushLog('ERROR','remops-detector','anomaly correlation triggered: checkout.error_rate + db.pool_utilization + payment.timeout_rate');
+    },5600);
 
-  schedule(()=> startInvestigation(), 7600);
+    schedule(()=>{
+      pushTimeline('Customer session telemetry shows repeated order failures');
+    },6600);
+
+    schedule(()=> startInvestigation(), 7600);
+  }, REMOPS_GRACE_MS);
 }
 
 function flipPod(idx,status){
@@ -1423,6 +1435,7 @@ function updateTriggerBtn(){}
 function resetDemo(){
   clearTimers();
   state.phase='normal';
+  state.remopsActive=false;
   state.incident=null;
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
