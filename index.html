@@ -630,6 +630,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .led:first-child{background:var(--paper)}
 .led:first-child .ld{color:var(--ink);font-weight:500}
 .led:first-child .lm{color:var(--red)}
+.reasoncursor{display:inline-block;margin-left:2px;color:var(--red);animation:lampBlink 1s steps(1,end) infinite}
+@media (prefers-reduced-motion: reduce){ .reasoncursor{animation:none} }
 .timeline-list{padding:0}
 .timeline-list::before{display:none}
 .tl-item{position:relative;padding:0}
@@ -931,6 +933,7 @@ const state = {
   evidence:[],
   confidence:0,
   investigation:{connected:[], traced:[]},
+  reasoning:[],
   remediationSteps:[
     {key:'rollback', label:'Rollback checkout-service deployment', done:false, ts:null},
     {key:'drain', label:'Drain unhealthy checkout pods', done:false, ts:null},
@@ -996,6 +999,13 @@ function pushSession(text, ok){
   if(state.sessions.length>30) state.sessions.pop();
   if(state.rops.activeSection==='sessions') renderActiveConsole();
 }
+/* The step-by-step "thinking" trace — what RemOps is checking and ruling
+   out, live, before it ever states a root cause. The point is to never
+   let the diagnosis feel like a black box. */
+function pushReasoning(text){
+  state.reasoning.push({t:fmtTime(now()), d:text});
+  if(state.rops.activeSection==='investigation') renderActiveConsole();
+}
 
 /* ============================================================
    PHASE / INCIDENT ENGINE
@@ -1020,6 +1030,7 @@ function startIncident(){
   state.incident={ id:'INC-'+(2100+Math.floor(Math.random()*800)), severity:'P1', detectedAt:null, resolvedAt:null };
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
+  state.reasoning=[];
   state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
   state.sandboxSteps.forEach(s=>{s.done=false; s.ts=null;});
   state.sandbox={status:'idle', attempts:0, failReason:null};
@@ -1076,8 +1087,27 @@ function healPods(){
 
 const SIGNAL_SOURCES=['Customer Sessions','Application Logs','Metrics','Distributed Traces','Kubernetes','Database','Deployments','GitHub'];
 
+/* Narrates what RemOps is doing at each moment of the investigation, so the
+   diagnosis never just appears — you watch it get ruled in and ruled out. */
+const REASONING_STEPS=[
+  {t:200,  s:'Pulling signal sources: logs, metrics, traces, Kubernetes, database, deployments, GitHub, customer sessions.'},
+  {t:900,  s:'Checkout 5xx rate crossed baseline — opening a correlation window around the spike.'},
+  {t:1700, s:'Scanning deploys within the blast radius of checkout-service…'},
+  {t:2300, s:'checkout-service v2.114.0 deployed 8 minutes ago — flagging as primary suspect.'},
+  {t:3000, s:'Tracing the request path: checkout → order → payment → postgres.'},
+  {t:3800, s:'Ruling out payment-service — its latency spike sits downstream of a wait, not a slow call of its own.'},
+  {t:4600, s:'Ruling out inventory-service and search-service — no correlated error signal on either.'},
+  {t:5400, s:'Database connection pool saturation lines up with the deploy timestamp within 40 seconds.'},
+  {t:6200, s:'Cross-referencing the GitHub diff for v2.114.0…'},
+  {t:7000, s:'Diff opens one DB connection per cart line item instead of reusing the pooled connection — matches the exhaustion pattern exactly.'},
+  {t:7800, s:'Hypothesis confirmed. Computing confidence score.'},
+];
+
 function startInvestigation(){
   setPhase('investigating');
+  REASONING_STEPS.forEach(step=>{
+    schedule(()=> pushReasoning(step.s), step.t);
+  });
   SIGNAL_SOURCES.forEach((s,i)=>{
     schedule(()=>{
       state.investigation.connected.push(s);
@@ -1292,6 +1322,7 @@ function resetDemo(){
   state.incident=null;
   state.timeline=[]; state.evidence=[]; state.confidence=0; state.authorized=false;
   state.investigation={connected:[], traced:[]};
+  state.reasoning=[];
   state.remediationSteps.forEach(s=>{s.done=false; s.ts=null;});
   state.failedCheckoutAttempts=0;
   state.orderConfirmed=false; state.orderConfirmedAt=null;
@@ -1771,8 +1802,8 @@ const CC_SECTIONS={
   },
   investigation:{
     n:'03 · Investigation',
-    what:'Where RemOps puts the pieces together.',
-    role:'Bad deploy → too many connections → pool ran dry → checkout died → payments backed up behind it.'
+    what:'Where RemOps puts the pieces together — out loud, not behind a black box.',
+    role:'Watch the reasoning trace at the top: what it checks, what it rules out, and why, before it ever names a root cause.'
   },
   remediation:{
     n:'04 · Remediation',
@@ -2210,8 +2241,15 @@ function serviceMapSvg(){
 }
 function sectionInvestigation(){
   const conn=state.investigation.connected;
+  const thinking = state.phase==='investigating';
   return `
     ${sevTopline('Investigation')}
+    <div class="panel">
+      <div class="panel-h"><h2>RemOps Reasoning</h2><span class="sub">${thinking?'live — thinking through the signals':(state.reasoning.length?state.reasoning.length+' steps recorded':'idle')}</span></div>
+      ${state.reasoning.length ? `<div class="ledger" style="max-height:260px">${state.reasoning.slice().reverse().map((r,i)=>`
+        <div class="led"><span class="lt">${r.t}</span><span class="lm">›</span><span class="ld">${esc(r.d)}${(thinking && i===0) ? ' <span class="reasoncursor">▋</span>' : ''}</span></div>`).join('')}</div>`
+      : `<div class="empty-console" style="padding:10px">Nothing to reason about yet — no active incident.</div>`}
+    </div>
     <div class="grid2">
       <div class="panel">
         <div class="panel-h"><h2>Signal Sources</h2><span class="sub">${conn.length}/${SIGNAL_SOURCES.length} connected</span></div>
